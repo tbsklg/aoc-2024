@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub fn solve(input: &String) -> u64 {
+pub fn solve(input: &str) -> u64 {
     let numbers = input
         .lines()
         .map(|l| {
@@ -19,7 +19,8 @@ pub fn solve(input: &String) -> u64 {
             counts
         });
 
-    numbers.iter()
+    numbers
+        .iter()
         .map(|v| v[0])
         .map(|x| x * counts.get(&x).unwrap_or(&0))
         .sum()
@@ -28,7 +29,7 @@ pub fn solve(input: &String) -> u64 {
 #[cfg(test)]
 pub mod tests {
     use super::solve;
-    
+
     #[test]
     fn should_solve() {
         assert_eq!(
@@ -37,4 +38,3 @@ pub mod tests {
         );
     }
 }
-

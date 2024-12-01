@@ -1,6 +1,6 @@
 use std::iter::zip;
 
-pub fn solve(input: &String) -> u64 {
+pub fn solve(input: &str) -> u64 {
     let numbers = input
         .lines()
         .map(|l| {
@@ -26,7 +26,7 @@ pub fn solve(input: &String) -> u64 {
 #[cfg(test)]
 pub mod tests {
     use super::solve;
-    
+
     #[test]
     fn should_solve() {
         assert_eq!(
