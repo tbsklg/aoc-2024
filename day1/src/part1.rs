@@ -4,7 +4,7 @@ pub fn solve(input: &String) -> u64 {
     let l = input
         .lines()
         .map(|l| {
-            l.split("   ")
+            l.split_whitespace()
                 .map(|n| n.parse::<u64>().unwrap())
                 .collect::<Vec<u64>>()
         })
@@ -21,4 +21,17 @@ pub fn solve(input: &String) -> u64 {
         .collect::<Vec<u64>>()
         .iter()
         .sum()
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::solve;
+    
+    #[test]
+    fn should_solve() {
+        assert_eq!(
+            1765812,
+            solve(&std::fs::read_to_string("input.txt").unwrap())
+        );
+    }
 }
