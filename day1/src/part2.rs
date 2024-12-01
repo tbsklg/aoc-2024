@@ -1,4 +1,4 @@
-use std::iter::zip;
+use std::collections::HashMap;
 
 pub fn solve(input: &str) -> u64 {
     let numbers = input
@@ -10,16 +10,19 @@ pub fn solve(input: &str) -> u64 {
         })
         .collect::<Vec<_>>();
 
-    let mut lhs = numbers.iter().map(|v| v[0]).collect::<Vec<_>>();
-    let mut rhs = numbers.iter().map(|v| v[1]).collect::<Vec<_>>();
-
-    lhs.sort();
-    rhs.sort();
-
-    zip(&lhs, &rhs)
-        .map(|(l, r)| l.abs_diff(*r))
-        .collect::<Vec<u64>>()
+    let counts = numbers
         .iter()
+        .map(|v| v[1])
+        .fold(HashMap::new(), |mut counts, c| {
+            let current_count = counts.get(&c).unwrap_or(&0);
+            counts.insert(c, current_count + 1);
+            counts
+        });
+
+    numbers
+        .iter()
+        .map(|v| v[0])
+        .map(|x| x * counts.get(&x).unwrap_or(&0))
         .sum()
 }
 
@@ -30,7 +33,7 @@ pub mod tests {
     #[test]
     fn should_solve() {
         assert_eq!(
-            1765812,
+            20520794,
             solve(&std::fs::read_to_string("input.txt").unwrap())
         );
     }
