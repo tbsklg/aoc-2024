@@ -1,1 +1,0 @@
-/Users/tbsklg/git-checkouts/aoc-2024/day2/target/debug/day2: /Users/tbsklg/git-checkouts/aoc-2024/day2/src/lib.rs /Users/tbsklg/git-checkouts/aoc-2024/day2/src/main.rs /Users/tbsklg/git-checkouts/aoc-2024/day2/src/part1.rs /Users/tbsklg/git-checkouts/aoc-2024/day2/src/part2.rs
