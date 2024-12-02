@@ -17,8 +17,7 @@ fn is_safe(report: &Vec<u32>) -> bool {
     let all_increasing = s.clone().all(|(f, s)| f <= s);
     let all_decreasing = s.clone().all(|(f, s)| f >= s);
 
-    (all_increasing || all_decreasing) 
-    && s.map(|(f, s)| f.abs_diff(*s)).all(|d| d > 0 && d < 4)
+    (all_increasing || all_decreasing) && s.map(|(f, s)| f.abs_diff(*s)).all(|d| d > 0 && d < 4)
 }
 
 fn reports(report: &Vec<u32>) -> Vec<Vec<u32>> {
@@ -29,6 +28,6 @@ fn reports(report: &Vec<u32>) -> Vec<Vec<u32>> {
         r.remove(i);
         reports.push(r);
     }
-    
+
     reports
 }
