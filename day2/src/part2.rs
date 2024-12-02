@@ -8,7 +8,7 @@ pub fn solve(input: &str) -> usize {
                 .map(|n| n.parse::<u32>().unwrap())
                 .collect::<Vec<u32>>()
         })
-        .filter(|r| reports(r).iter().any(is_safe))
+        .filter(|r| generate_reports(r).iter().any(is_safe))
         .count()
 }
 
@@ -20,7 +20,7 @@ fn is_safe(report: &Vec<u32>) -> bool {
     (all_increasing || all_decreasing) && s.map(|(f, s)| f.abs_diff(*s)).all(|d| d > 0 && d < 4)
 }
 
-fn reports(report: &Vec<u32>) -> Vec<Vec<u32>> {
+fn generate_reports(report: &Vec<u32>) -> Vec<Vec<u32>> {
     let mut reports = vec![report.clone()];
 
     for i in 0..report.len() {
