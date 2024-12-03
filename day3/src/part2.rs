@@ -22,6 +22,6 @@ pub fn solve(input: &str) -> usize {
             captures.push(cap[0].to_owned());
         }
     }
-    
+
     part1::solve(&captures.concat())
 }
