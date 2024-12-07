@@ -1,96 +1,66 @@
 pub fn solve(input: &str) -> usize {
-    find_x_positions(input)
-        .into_iter()
-        .map(|p| horizontal(p, input) + vertical(p, input) + diagonal(p, input))
-        .sum()
+    Grid::from(input).count_xmas()
 }
 
-fn find_x_positions(input: &str) -> Vec<(usize, usize)> {
-    input
-        .lines()
-        .enumerate()
-        .flat_map(|(row, line)| {
-            line.chars()
-                .enumerate()
-                .filter(|(_, c)| *c == 'X')
-                .map(move |(col, _)| (row as usize, col as usize))
-                .collect::<Vec<(usize, usize)>>()
+#[derive(Debug)]
+struct Grid {
+    grid: Vec<Vec<char>>,
+    rows: usize,
+    cols: usize,
+}
+
+impl From<&str> for Grid {
+    fn from(input: &str) -> Self {
+        let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
+
+        let (rows, cols) = (grid.len(), grid.first().map_or(0, |l| l.len()));
+
+        Self { grid, rows, cols }
+    }
+}
+
+impl Grid {
+    fn count_xmas(&mut self) -> usize {
+        self.find_positions_for('X')
+            .into_iter()
+            .map(|p| self.count_occurrence(p))
+            .sum()
+    }
+
+    fn count_occurrence(&mut self, (row, col): (usize, usize)) -> usize {
+        [
+            (0, 1),
+            (1, 0),
+            (1, 1),
+            (0, -1),
+            (-1, 0),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+        ]
+        .iter()
+        .filter(|(offset_row, offset_col)| {
+            (0..4).all(|i| {
+                let next_row = row as isize + i as isize * offset_row;
+                let next_col = col as isize + i as isize * offset_col;
+
+                self.get(next_row, next_col) == "XMAS".chars().nth(i).expect("")
+            })
         })
-        .collect::<Vec<(usize, usize)>>()
-}
-
-fn horizontal((r, c): (usize, usize), input: &str) -> usize {
-    let line = input.lines().nth(r as usize).unwrap();
-
-    match (
-        line.get(c.saturating_sub(3)..=c),
-        line.get(c..=(c.saturating_add(3))),
-    ) {
-        (Some("SAMX"), Some("XMAS")) => 2,
-        (Some("SAMX"), _) => 1,
-        (_, Some("XMAS")) => 1,
-        _ => 0,
-    }
-}
-
-fn vertical((r, c): (usize, usize), input: &str) -> usize {
-    let line: String = input.lines().map(|l| l.chars().nth(c).unwrap()).collect();
-
-    match (
-        line.get(r.saturating_sub(3)..=r),
-        line.get(r..=(r.saturating_add(3))),
-    ) {
-        (Some("SAMX"), Some("XMAS")) => 2,
-        (Some("SAMX"), _) => 1,
-        (_, Some("XMAS")) => 1,
-        _ => 0,
-    }
-}
-
-fn diagonal((r, c): (usize, usize), input: &str) -> usize {
-    let lines: Vec<&str> = input.lines().collect();
-    let mut left_top_bottom_right = String::new();
-
-    for offset in -3..=3 {
-        let new_r = (r as isize + offset) as usize;
-        let new_c = (c as isize + offset) as usize;
-
-        if let Some(line) = lines.get(new_r) {
-            if let Some(ch) = line.chars().nth(new_c) {
-                left_top_bottom_right.push(ch);
-            }
-        }
+        .count()
     }
 
-    let mut bottom_left_to_top_right = String::new();
-    for offset in -3..=3 {
-        let new_r = (r as isize + offset) as usize; // Move downwards
-        let new_c = (c as isize - offset) as usize; // Move leftwards
-
-        if let Some(line) = lines.get(new_r) {
-            if let Some(ch) = line.chars().nth(new_c) {
-                bottom_left_to_top_right.push(ch);
-            }
-        }
+    fn get(&mut self, row: isize, col: isize) -> char {
+        *self.grid
+            .get(row as usize)
+            .and_then(|r| r.get(col as usize))
+            .unwrap_or(&'.')
     }
 
-    let mut count = 0;
-
-    if left_top_bottom_right.starts_with("SAMX") {
-        count += 1;
-    };
-
-    if left_top_bottom_right.ends_with("XMAS") {
-        count += 1;
-    };
-
-    if bottom_left_to_top_right.starts_with("SAMX") {
-        count += 1;
+    fn find_positions_for(&mut self, c: char) -> Vec<(usize, usize)> {
+        (0..self.rows)
+            .flat_map(|row| (0..self.cols).map(move |col| (row, col)))
+            .filter(|&(row, col)| self.grid[row][col] == c)
+            .collect()
     }
-
-    if bottom_left_to_top_right.ends_with("XMAS") {
-        count += 1;
-    }
-
-    count
 }
