@@ -72,7 +72,7 @@ impl Grid {
                 let next_row = row as isize + i as isize * offset_row;
                 let next_col = col as isize + i as isize * offset_col;
 
-                self.get(next_row, next_col) == "XMAS".chars().nth(i).expect("")
+                self.get(next_row, next_col) == "XMAS".chars().nth(i).unwrap()
             })
         })
         .count()
