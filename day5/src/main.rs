@@ -19,7 +19,7 @@ struct Manual {
     pages: Vec<Vec<u32>>,
 }
 impl Manual {
-    fn correct_ordered_page_score (&self) -> u32 {
+    fn correct_ordered_page_score(&self) -> u32 {
         self.pages
             .iter()
             .filter(|p| self.correct_ordered(p))
@@ -27,11 +27,11 @@ impl Manual {
             .sum()
     }
 
-    fn uncorrected_ordered_page_score (&self) -> u32 {
+    fn uncorrected_ordered_page_score(&self) -> u32 {
         self.pages
             .iter()
             .filter(|p| !self.correct_ordered(p))
-            .map(|p| self.fix_order(p))
+            .map(|p| self.fix_order(p.to_vec()))
             .map(|p| *p.get(p.len() / 2).unwrap())
             .sum()
     }
@@ -47,23 +47,16 @@ impl Manual {
         })
     }
 
-    fn fix_order(&self, page: &Vec<u32>) -> Vec<u32> {
-        let mut page = page.clone();
-        let mut fixed = false;
-        while !fixed {
-            fixed = true;
-            for (a, b) in &self.rules {
-                let a = page.iter().position(|&x| x == *a);
-                let b = page.iter().position(|&x| x == *b);
-                match (a, b) {
-                    (Some(a), Some(b)) if a > b => {
-                        page.swap(a, b);
-                        fixed = false;
-                    }
-                    _ => {}
-                }
+    fn fix_order(&self, mut page: Vec<u32>) -> Vec<u32> {
+        page.sort_by(|&a, &b| {
+            if self.rules.contains(&(a, b)) {
+                std::cmp::Ordering::Less
+            } else if self.rules.contains(&(b, a)) {
+                std::cmp::Ordering::Greater
+            } else {
+                std::cmp::Ordering::Equal
             }
-        }
+        });
         page
     }
 }
