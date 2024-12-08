@@ -2,10 +2,15 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> u32 {
-    Manual::from(input).page_order_score()
+    Manual::from(input).correct_ordered_page_score()
+}
+
+fn part2(_input: &str) -> u32 {
+    Manual::from(_input).uncorrected_ordered_page_score()
 }
 
 #[derive(Debug)]
@@ -14,10 +19,19 @@ struct Manual {
     pages: Vec<Vec<u32>>,
 }
 impl Manual {
-    fn page_order_score(&self) -> u32 {
+    fn correct_ordered_page_score (&self) -> u32 {
         self.pages
             .iter()
             .filter(|p| self.correct_ordered(p))
+            .map(|p| *p.get(p.len() / 2).unwrap())
+            .sum()
+    }
+
+    fn uncorrected_ordered_page_score (&self) -> u32 {
+        self.pages
+            .iter()
+            .filter(|p| !self.correct_ordered(p))
+            .map(|p| self.fix_order(p))
             .map(|p| *p.get(p.len() / 2).unwrap())
             .sum()
     }
@@ -31,6 +45,26 @@ impl Manual {
                 _ => true,
             }
         })
+    }
+
+    fn fix_order(&self, page: &Vec<u32>) -> Vec<u32> {
+        let mut page = page.clone();
+        let mut fixed = false;
+        while !fixed {
+            fixed = true;
+            for (a, b) in &self.rules {
+                let a = page.iter().position(|&x| x == *a);
+                let b = page.iter().position(|&x| x == *b);
+                match (a, b) {
+                    (Some(a), Some(b)) if a > b => {
+                        page.swap(a, b);
+                        fixed = false;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        page
     }
 }
 
