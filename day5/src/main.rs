@@ -4,9 +4,8 @@ fn main() {
     println!("Part 1: {}", part1(&input));
 }
 
-fn part1(input: &str) -> usize {
-    Manual::from(input).correct_ordered_pages();
-    1
+fn part1(input: &str) -> u32 {
+    Manual::from(input).page_order_score()
 }
 
 #[derive(Debug)]
@@ -15,15 +14,23 @@ struct Manual {
     pages: Vec<Vec<u32>>,
 }
 impl Manual {
-    fn correct_ordered_pages(&self) -> usize {
+    fn page_order_score(&self) -> u32 {
         self.pages
             .iter()
             .filter(|p| self.correct_ordered(p))
-            .count()
+            .map(|p| *p.get(p.len() / 2).unwrap())
+            .sum()
     }
 
     fn correct_ordered(&self, page: &Vec<u32>) -> bool {
-        false
+        self.rules.iter().all(|(a, b)| {
+            let a = page.iter().position(|&x| x == *a);
+            let b = page.iter().position(|&x| x == *b);
+            match (a, b) {
+                (Some(a), Some(b)) => a < b,
+                _ => true,
+            }
+        })
     }
 }
 
