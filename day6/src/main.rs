@@ -76,7 +76,7 @@ impl Map {
         loop {
             points.insert(self.guard.pos);
             let next = self.guard.dir.next(self.guard.pos);
-            
+
             match self.get(next) {
                 Some('#') => self.guard.dir = self.guard.dir.turn(),
                 Some(_) => self.guard.pos = next,
@@ -88,6 +88,8 @@ impl Map {
     }
 
     fn get(&self, (row, col): Pos) -> Option<char> {
-        self.grid.get(row as usize).and_then(|r| r.get(col as usize).copied())
-    } 
+        self.grid
+            .get(row as usize)
+            .and_then(|r| r.get(col as usize).copied())
+    }
 }
