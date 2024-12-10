@@ -4,7 +4,7 @@ fn main() {
     println!("Part 1: {}", part1(&input));
 }
 
-fn part1(input: &str) -> u32 {
+fn part1(input: &str) -> usize {
     Calibration::from(input)
         .equations
         .iter()
@@ -13,12 +13,30 @@ fn part1(input: &str) -> u32 {
         .sum()
 }
 
-fn is_correct_equation(v: &(u32, Vec<u32>)) -> bool {
-    true
+fn is_correct_equation(input: &(usize, Vec<usize>)) -> bool {
+
+    fn find(v: Vec<usize>, target: usize, current: usize) -> bool {
+        if current > target {
+            return false;
+        }
+
+        if v.is_empty() {
+            return current == target;
+        }
+
+        let head = v.first().unwrap();
+        let tail = v.iter().skip(1).map(|v| *v).collect::<Vec<usize>>();
+
+        find(tail.clone(), target, current + head)
+            || find(tail.clone(), target, current * head)
+    }
+
+    find(input.1.clone(), input.0, 0)
 }
 
-type Equation = (u32, Vec<u32>);
+type Equation = (usize, Vec<usize>);
 
+#[derive(Debug)]
 struct Calibration {
     equations: Vec<Equation>,
 }
@@ -30,13 +48,13 @@ impl From<&str> for Calibration {
             .map(|l| l.split(':').collect::<Vec<&str>>())
             .map(|l| {
                 (
-                    l[0].parse::<u32>().unwrap(),
+                    l[0].parse::<usize>().unwrap(),
                     l[1].split_whitespace()
-                        .map(|v| v.parse::<u32>().unwrap())
-                        .collect::<Vec<u32>>(),
+                        .map(|v| v.parse::<usize>().unwrap())
+                        .collect::<Vec<usize>>(),
                 )
             })
-            .collect::<Vec<(u32, Vec<u32>)>>();
+            .collect::<Vec<(usize, Vec<usize>)>>();
 
         Self { equations }
     }
