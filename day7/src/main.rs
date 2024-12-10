@@ -69,12 +69,6 @@ fn is_correct_equation(input: &(usize, Vec<usize>)) -> bool {
 
 type Equation = (usize, Vec<usize>);
 
-enum Operator {
-    Add,
-    Multi,
-    Concat,
-}
-
 #[derive(Debug)]
 struct Calibration {
     equations: Vec<Equation>,
