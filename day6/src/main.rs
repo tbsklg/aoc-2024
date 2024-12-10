@@ -14,10 +14,7 @@ fn part1(input: &str) -> usize {
 fn part2(input: &str) -> usize {
     let mut map = Map::from(input);
 
-    map.walk()
-        .iter()
-        .filter(|&p| map.loops(*p))
-        .count()
+    map.walk().iter().filter(|&p| map.loops(*p)).count()
 }
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
@@ -28,7 +25,7 @@ enum Dir {
     Right,
 }
 impl Dir {
-    fn next(&self, (row, col): (i32, i32)) -> (i32, i32) {
+    fn next_position(&self, (row, col): (i32, i32)) -> (i32, i32) {
         match self {
             Dir::Up => (row - 1, col),
             Dir::Down => (row + 1, col),
@@ -55,7 +52,7 @@ struct Guard {
 
 #[derive(Debug)]
 struct Map {
-    guard: Guard,
+    current_guard: Guard,
     initial_guard: Guard,
     grid: Vec<Vec<char>>,
 }
@@ -74,7 +71,7 @@ impl From<&str> for Map {
             .expect("No guard found!");
 
         Self {
-            guard: Guard { pos, dir: Dir::Up },
+            current_guard: Guard { pos, dir: Dir::Up },
             initial_guard: Guard { pos, dir: Dir::Up },
             grid,
         }
@@ -86,12 +83,12 @@ impl Map {
         let mut points: HashSet<Pos> = HashSet::new();
 
         loop {
-            points.insert(self.guard.pos);
-            let next = self.guard.dir.next(self.guard.pos);
+            points.insert(self.current_guard.pos);
+            let next = self.current_guard.dir.next_position(self.current_guard.pos);
 
             match self.get(next) {
-                Some('#') => self.guard.dir = self.guard.dir.rotate_right_90(),
-                Some(_) => self.guard.pos = next,
+                Some('#') => self.current_guard.dir = self.current_guard.dir.rotate_right_90(),
+                Some(_) => self.current_guard.pos = next,
                 None => break,
             }
         }
@@ -102,23 +99,25 @@ impl Map {
     fn loops(&mut self, obstacle: Pos) -> bool {
         let mut points: HashSet<(Pos, Dir)> = HashSet::new();
 
-        self.guard = self.initial_guard;
-        self.place_obstacle(obstacle); 
+        self.current_guard = self.initial_guard;
+        self.place_obstacle(obstacle);
 
         let is_lopping = loop {
-            if !points.insert((self.guard.pos, self.guard.dir)) {
+            if !points.insert((self.current_guard.pos, self.current_guard.dir)) {
                 break true;
             }
 
-            let next = self.guard.dir.next(self.guard.pos);
+            let next = self.current_guard.dir.next_position(self.current_guard.pos);
 
             match self.get(next) {
-                Some('#' | 'O') => self.guard.dir = self.guard.dir.rotate_right_90(),
-                Some(_) => self.guard.pos = next,
+                Some('#' | 'O') => {
+                    self.current_guard.dir = self.current_guard.dir.rotate_right_90()
+                }
+                Some(_) => self.current_guard.pos = next,
                 None => break false,
             }
         };
-        
+
         self.remove_obstacle(obstacle);
         is_lopping
     }
