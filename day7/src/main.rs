@@ -14,7 +14,6 @@ fn part1(input: &str) -> usize {
 }
 
 fn is_correct_equation(input: &(usize, Vec<usize>)) -> bool {
-
     fn find(v: Vec<usize>, target: usize, current: usize) -> bool {
         if current > target {
             return false;
@@ -27,8 +26,7 @@ fn is_correct_equation(input: &(usize, Vec<usize>)) -> bool {
         let head = v.first().unwrap();
         let tail = v.iter().skip(1).map(|v| *v).collect::<Vec<usize>>();
 
-        find(tail.clone(), target, current + head)
-            || find(tail.clone(), target, current * head)
+        find(tail.clone(), target, current + head) || find(tail.clone(), target, current * head)
     }
 
     find(input.1.clone(), input.0, 0)
