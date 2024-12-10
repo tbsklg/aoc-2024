@@ -4,13 +4,23 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
-    Map::from(input).walk()
+    Map::from(input).walk().len()
 }
 
-#[derive(Debug)]
+fn part2(input: &str) -> usize {
+    let mut map = Map::from(input);
+
+    map.walk()
+        .iter()
+        .filter(|&p| map.loops(*p))
+        .count()
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 enum Dir {
     Up,
     Down,
@@ -27,7 +37,7 @@ impl Dir {
         }
     }
 
-    fn turn(&self) -> Dir {
+    fn rotate_right_90(&self) -> Dir {
         match self {
             Dir::Up => Dir::Right,
             Dir::Down => Dir::Left,
@@ -37,7 +47,7 @@ impl Dir {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Guard {
     pos: Pos,
     dir: Dir,
@@ -46,6 +56,7 @@ struct Guard {
 #[derive(Debug)]
 struct Map {
     guard: Guard,
+    initial_guard: Guard,
     grid: Vec<Vec<char>>,
 }
 
@@ -64,13 +75,14 @@ impl From<&str> for Map {
 
         Self {
             guard: Guard { pos, dir: Dir::Up },
+            initial_guard: Guard { pos, dir: Dir::Up },
             grid,
         }
     }
 }
 
 impl Map {
-    fn walk(&mut self) -> usize {
+    fn walk(&mut self) -> HashSet<Pos> {
         let mut points: HashSet<Pos> = HashSet::new();
 
         loop {
@@ -78,18 +90,50 @@ impl Map {
             let next = self.guard.dir.next(self.guard.pos);
 
             match self.get(next) {
-                Some('#') => self.guard.dir = self.guard.dir.turn(),
+                Some('#') => self.guard.dir = self.guard.dir.rotate_right_90(),
                 Some(_) => self.guard.pos = next,
                 None => break,
             }
         }
 
-        points.len()
+        points
+    }
+
+    fn loops(&mut self, obstacle: Pos) -> bool {
+        let mut points: HashSet<(Pos, Dir)> = HashSet::new();
+
+        self.guard = self.initial_guard;
+        self.place_obstacle(obstacle); 
+
+        let is_lopping = loop {
+            if !points.insert((self.guard.pos, self.guard.dir)) {
+                break true;
+            }
+
+            let next = self.guard.dir.next(self.guard.pos);
+
+            match self.get(next) {
+                Some('#' | 'O') => self.guard.dir = self.guard.dir.rotate_right_90(),
+                Some(_) => self.guard.pos = next,
+                None => break false,
+            }
+        };
+        
+        self.remove_obstacle(obstacle);
+        is_lopping
     }
 
     fn get(&self, (row, col): Pos) -> Option<char> {
         self.grid
             .get(row as usize)
             .and_then(|r| r.get(col as usize).copied())
+    }
+
+    fn place_obstacle(&mut self, obstacle: Pos) {
+        self.grid[obstacle.0 as usize][obstacle.1 as usize] = 'O';
+    }
+
+    fn remove_obstacle(&mut self, obstacle: Pos) {
+        self.grid[obstacle.0 as usize][obstacle.1 as usize] = '.';
     }
 }
