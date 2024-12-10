@@ -9,7 +9,7 @@ fn part1(input: &str) -> usize {
     Calibration::from(input)
         .equations
         .iter()
-        .filter(|v| is_correct_equation(*v))
+        .filter(|v| is_correct_equation(v, vec![add, multiply]))
         .map(|v| v.0)
         .sum()
 }
@@ -18,53 +18,50 @@ fn part2(input: &str) -> usize {
     Calibration::from(input)
         .equations
         .iter()
-        .filter(|v| is_correct_equation_2(*v))
+        .filter(|v| is_correct_equation(v, vec![add, multiply, concat]))
         .map(|v| v.0)
         .sum()
 }
 
-fn is_correct_equation_2(input: &(usize, Vec<usize>)) -> bool {
-    fn find(v: &[usize], target: usize, current: usize) -> bool {
-        if current > target {
-            return false;
-        }
+fn add(a: usize, b: usize) -> usize {
+    a + b
+}
 
-        if v.is_empty() {
-            return current == target;
-        }
-
-        let head = v.first().unwrap();
-        let tail = &v[1..];
-
-        find(tail, target, current + head)
-            || find(tail, target, current * head)
-            || find(tail, target, concat(current, *head))
-    }
-
-    find(&input.1, input.0, 0)
+fn multiply(a: usize, b: usize) -> usize {
+    a * b
 }
 
 fn concat(a: usize, b: usize) -> usize {
     format!("{}{}", a, b).parse().unwrap()
 }
 
-fn is_correct_equation(input: &(usize, Vec<usize>)) -> bool {
-    fn find(v: &[usize], target: usize, current: usize) -> bool {
-        if current > target {
+fn is_correct_equation(
+    input: &(usize, Vec<usize>),
+    operations: Vec<fn(usize, usize) -> usize>,
+) -> bool {
+    fn can_form_target(
+        numbers: &[usize],
+        target: usize,
+        current_value: usize,
+        operations: &[fn(usize, usize) -> usize],
+    ) -> bool {
+        if current_value > target {
             return false;
         }
 
-        if v.is_empty() {
-            return current == target;
+        if numbers.is_empty() {
+            return current_value == target;
         }
 
-        let head = v.first().unwrap();
-        let tail = &v[1..];
+        let (first, rest) = numbers.split_first().unwrap();
 
-        find(tail, target, current + head) || find(tail, target, current * head)
+        operations.iter().any(|operation| {
+            can_form_target(rest, target, operation(current_value, *first), operations)
+        })
     }
 
-    find(&input.1, input.0, 0)
+    let (target, numbers) = input;
+    can_form_target(numbers, *target, 0, &operations)
 }
 
 type Equation = (usize, Vec<usize>);
