@@ -7,10 +7,15 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
     Map::from(input).antinodes().unwrap_or(0)
+}
+
+fn part2(input: &str) -> usize {
+    Map::from(input).infinite_antinodes().unwrap_or(0)
 }
 
 #[derive(Debug)]
@@ -77,6 +82,43 @@ impl Map {
         });
 
         Some(points.len())
+    }
+
+    fn infinite_antinodes(&self) -> Option<usize> {
+        let points: HashSet<Point> = self.antennas.iter().fold(HashSet::new(), |mut points, p| {
+            let same_antennas = self
+                .antennas
+                .iter()
+                .filter(|(cp, a)| *cp != p.0 && *a == p.1)
+                .flat_map(|(cp, _)| {
+                    self.generate_antinodes(&p.0, cp)
+                        .into_iter()
+                        .chain(self.generate_antinodes(cp, &p.0))
+                })
+                .collect::<Vec<_>>();
+
+            for p in same_antennas {
+                points.insert(p);
+            }
+
+
+            points
+        });
+
+        Some(points.len())
+    }
+
+    fn generate_antinodes(&self, a: &Point, b: &Point) -> Vec<Point> {
+        let mut points = Vec::new();
+        let distance = *b - a;
+
+        let mut curr = *a + &distance;
+        while self.in_bounds(&curr) {
+            points.push(curr);
+            curr = curr + &distance;
+        }
+
+        points
     }
 
     fn in_bounds(&self, Point(r, c): &Point) -> bool {
