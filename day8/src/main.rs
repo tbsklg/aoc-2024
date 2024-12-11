@@ -1,4 +1,7 @@
-use std::{collections::HashSet, ops::{Add, Sub}};
+use std::{
+    collections::HashSet,
+    ops::{Add, Sub},
+};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -24,10 +27,7 @@ impl Sub<&Point> for Point {
     type Output = Self;
 
     fn sub(self, rhs: &Point) -> Self::Output {
-        Self(
-            self.0 - rhs.0,
-            self.1 - rhs.1,
-        )
+        Self(self.0 - rhs.0, self.1 - rhs.1)
     }
 }
 
@@ -35,10 +35,7 @@ impl Add<&Point> for Point {
     type Output = Self;
 
     fn add(self, rhs: &Point) -> Self::Output {
-        Self(
-            self.0 + rhs.0,
-            self.1 + rhs.1,
-        )
+        Self(self.0 + rhs.0, self.1 + rhs.1)
     }
 }
 
@@ -63,24 +60,22 @@ impl From<&str> for Map {
 
 impl Map {
     fn antinodes(&self) -> Option<usize> {
-        let points: HashSet<Point> =
-            self.antennas.iter().fold(HashSet::new(), |mut points, p| {
-                let same_antennas = self.antennas
-                    .iter()
-                    .filter(|(cp, a)| *cp != p.0 && *a == p.1)
-                    .flat_map(|(cp, _)| {
-                        vec![*cp + cp - &p.0, p.0 + &p.0 - cp]
-                    })
-                    .filter(|p| self.in_bounds(p))
-                    .collect::<Vec<_>>();
-                
-                for p in same_antennas {
-                    points.insert(p);
-                }
+        let points: HashSet<Point> = self.antennas.iter().fold(HashSet::new(), |mut points, p| {
+            let same_antennas = self
+                .antennas
+                .iter()
+                .filter(|(cp, a)| *cp != p.0 && *a == p.1)
+                .flat_map(|(cp, _)| vec![*cp + cp - &p.0, p.0 + &p.0 - cp])
+                .filter(|p| self.in_bounds(p))
+                .collect::<Vec<_>>();
 
-                points
-            });
-        
+            for p in same_antennas {
+                points.insert(p);
+            }
+
+            points
+        });
+
         Some(points.len())
     }
 
