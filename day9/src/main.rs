@@ -5,9 +5,7 @@ fn main() {
 }
 
 fn part1(input: &str) -> usize {
-    let checksum = &mut Disk::from(input).compress_checksum();
-    println!("{:?}", checksum);
-    1
+    Disk::from(input).compress()
 }
 
 #[derive(Debug)]
@@ -20,7 +18,6 @@ impl From<&str> for Disk {
         let mut data: Vec<Option<u32>> = vec![];
 
         let mut raw_data = input.trim_end().chars().map(|x| x.to_digit(10)).enumerate();
-
         let mut index = 0;
         while let Some((i, v)) = raw_data.next() {
             if is_even(&i) {
@@ -40,7 +37,7 @@ impl From<&str> for Disk {
 }
 
 impl Disk {
-    fn compress_checksum(&mut self) -> usize {
+    fn compress(&mut self) -> usize {
         let mut x = 0;
         let mut y = self.data.len() - 1;
 
@@ -49,7 +46,7 @@ impl Disk {
                 Some(_) => {
                     x += 1;
                     continue;
-                },
+                }
                 None => match self.data[y] {
                     Some(_) => {
                         self.data[x] = self.data.remove(y);
@@ -63,9 +60,10 @@ impl Disk {
             }
         }
 
-        self.data.iter()
+        self.data
+            .iter()
             .enumerate()
-            .map(|(i, o)| i *o.unwrap_or(0) as usize)
+            .map(|(i, o)| i * o.unwrap_or(0) as usize)
             .sum()
     }
 }
