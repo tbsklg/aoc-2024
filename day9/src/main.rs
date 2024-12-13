@@ -84,7 +84,6 @@ fn compress(data: &mut Vec<Option<u32>>) {
 }
 
 fn compress_blocks(blocks: &mut Vec<(Option<u32>, u32)>) {
-    let mut x = 0;
     let mut y = blocks.len() - 1;
 
     while y != 0 {
