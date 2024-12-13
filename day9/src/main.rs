@@ -6,17 +6,49 @@ fn main() {
 }
 
 fn part1(input: &str) -> usize {
-    Disk::from(input).compress()
+    let disk = &mut Disk::from(input);
+    disk.compress();
+    disk.checksum_data()
 }
 
 fn part2(input: &str) -> usize {
-    Disk::from(input).compress_blocks()
+    let disk = &mut Disk::from(input);
+    disk.compress_blocks();
+    disk.checksum_blocks()
 }
 
 #[derive(Debug)]
 struct Disk {
     data: Vec<Option<u32>>,
     blocks: Vec<(Option<u32>, u32)>,
+}
+
+impl Disk {
+    fn checksum_data(&self) -> usize {
+        self.data
+            .iter()
+            .enumerate()
+            .map(|(i, o)| i * o.unwrap_or(0) as usize)
+            .sum()
+    }
+
+    fn checksum_blocks(&self) -> usize {
+        let mut checksum: usize = 0;
+        let mut index: usize = 0;
+
+        for block in self.blocks.iter() {
+            if block.0.is_none() {
+                index += block.1 as usize;
+            } else {
+                for _ in 0..block.1 {
+                    checksum += index * block.0.unwrap() as usize;
+                    index += 1;
+                }
+            }
+        }
+
+        checksum
+    }
 }
 
 impl From<&str> for Disk {
@@ -46,7 +78,7 @@ impl From<&str> for Disk {
 }
 
 impl Disk {
-    fn compress(&mut self) -> usize {
+    fn compress(&mut self) {
         let mut x = 0;
         let mut y = self.data.len() - 1;
 
@@ -68,15 +100,9 @@ impl Disk {
                 },
             }
         }
-
-        self.data
-            .iter()
-            .enumerate()
-            .map(|(i, o)| i * o.unwrap_or(0) as usize)
-            .sum()
     }
 
-    fn compress_blocks(&mut self) -> usize {
+    fn compress_blocks(&mut self) {
         let mut y = self.blocks.len() - 1;
 
         while y != 0 {
@@ -92,7 +118,7 @@ impl Disk {
                     match block_index {
                         Some(i) => {
                             let block = self.blocks[i];
-                            
+
                             match block.1.cmp(&data.1) {
                                 std::cmp::Ordering::Equal => {
                                     self.blocks[i] = self.blocks[y];
@@ -111,25 +137,9 @@ impl Disk {
                         None => y -= 1,
                     }
                 }
-                None => y -= 1
+                None => y -= 1,
             }
         }
-        
-        let mut checksum: usize = 0;
-        let mut index: usize = 0;
-        
-        for block in self.blocks.iter() {
-            if block.0.is_none() {
-                index += block.1 as usize;
-            } else {
-                for _ in 0..block.1 {
-                    checksum += index * block.0.unwrap() as usize;
-                    index += 1;
-                }
-            } 
-        }
-
-        checksum
     }
 }
 
