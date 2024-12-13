@@ -17,9 +17,9 @@ impl From<&str> for Disk {
     fn from(input: &str) -> Self {
         let mut data: Vec<Option<u32>> = vec![];
 
-        let mut raw_data = input.trim_end().chars().map(|x| x.to_digit(10)).enumerate();
+        let raw_data = input.trim_end().chars().map(|x| x.to_digit(10)).enumerate();
         let mut index = 0;
-        while let Some((i, v)) = raw_data.next() {
+        for (i, v) in raw_data {
             if is_even(&i) {
                 for _ in 0..v.unwrap() {
                     data.push(Some(index));
