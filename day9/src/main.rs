@@ -92,16 +92,20 @@ impl Disk {
                     match block_index {
                         Some(i) => {
                             let block = self.blocks[i];
+                            
+                            match block.1.cmp(&data.1) {
+                                std::cmp::Ordering::Equal => {
+                                    self.blocks[i] = self.blocks[y];
+                                    self.blocks[y] = (None, data.1);
+                                    y -= 1;
+                                }
+                                std::cmp::Ordering::Greater => {
+                                    self.blocks[i] = self.blocks[y];
+                                    self.blocks[y] = (None, data.1);
 
-                            if block.1 == data.1 {
-                                self.blocks[i] = self.blocks[y];
-                                self.blocks[y] = (None, data.1);
-                                y -= 1;
-                            } else if block.1 > data.1 {
-                                self.blocks[i] = self.blocks[y];
-                                self.blocks[y] = (None, data.1);
-
-                                self.blocks.insert(i + 1, (None, block.1 - data.1));
+                                    self.blocks.insert(i + 1, (None, block.1 - data.1));
+                                }
+                                _ => {}
                             }
                         }
                         None => y -= 1,
