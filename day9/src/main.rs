@@ -1,8 +1,13 @@
+use std::time::Instant;
+
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+
+    let now = Instant::now();
     println!("Part 1: {}", part2(&input));
+    println!("{}", now.elapsed().as_millis());
 }
 
 fn part1(input: &str) -> usize {
@@ -79,15 +84,15 @@ fn compress(data: &mut Vec<Option<u32>>) {
 }
 
 fn compress_blocks(blocks: &mut Vec<(Option<u32>, u32)>) {
+    let mut x = 0;
     let mut y = blocks.len() - 1;
 
     while y != 0 {
         let data = blocks[y];
         match data.0 {
             Some(_) => {
-                let block_index = blocks
+                let block_index = blocks[..y]
                     .iter()
-                    .take(y)
                     .position(|b| b.0.is_none() && b.1 >= data.1);
 
                 match block_index {
