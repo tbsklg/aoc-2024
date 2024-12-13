@@ -5,54 +5,34 @@ fn main() {
 }
 
 fn part1(input: &str) -> usize {
-    let disk = &mut Disk::from(input);
-    disk.compress();
-    println!("{:?}", disk.data);
+    let checksum = &mut Disk::from(input).compress_checksum();
+    println!("{:?}", checksum);
     1
-}
-
-#[derive(Debug, Clone)]
-struct Data {
-    id: Option<u32>,
-    offset: u32,
-    len: u32,
-}
-
-impl Data {
-    fn update_len(&mut self, len: u32) {
-        self.len = len
-    }
 }
 
 #[derive(Debug)]
 struct Disk {
-    data: Vec<Data>,
+    data: Vec<Option<u32>>,
 }
 
 impl From<&str> for Disk {
     fn from(input: &str) -> Self {
-        let mut data: Vec<Data> = vec![];
+        let mut data: Vec<Option<u32>> = vec![];
 
-        let mut id = 0..;
         let mut raw_data = input.trim_end().chars().map(|x| x.to_digit(10)).enumerate();
 
-        let mut offset = 0;
+        let mut index = 0;
         while let Some((i, v)) = raw_data.next() {
-            let len = v.unwrap_or(0);
             if is_even(&i) {
-                data.push(Data {
-                    id: Some(id.next().unwrap()),
-                    offset,
-                    len,
-                });
+                for _ in 0..v.unwrap() {
+                    data.push(Some(index));
+                }
+                index += 1;
             } else {
-                data.push(Data {
-                    id: None,
-                    offset,
-                    len,
-                })
+                for _ in 0..v.unwrap() {
+                    data.push(None);
+                }
             }
-            offset += len;
         }
 
         Self { data }
@@ -60,10 +40,33 @@ impl From<&str> for Disk {
 }
 
 impl Disk {
-    fn compress(&mut self) {
-        let spaces = 
-            self.data.iter().filter(|d| d.id.is_none()).collect::<Vec<&Data>>();
+    fn compress_checksum(&mut self) -> usize {
+        let mut x = 0;
+        let mut y = self.data.len() - 1;
 
+        while x != y {
+            match self.data[x] {
+                Some(_) => {
+                    x += 1;
+                    continue;
+                },
+                None => match self.data[y] {
+                    Some(_) => {
+                        self.data[x] = self.data.remove(y);
+                        y -= 1;
+                    }
+                    None => {
+                        self.data.remove(y);
+                        y -= 1;
+                    }
+                },
+            }
+        }
+
+        self.data.iter()
+            .enumerate()
+            .map(|(i, o)| i *o.unwrap_or(0) as usize)
+            .sum()
     }
 }
 
