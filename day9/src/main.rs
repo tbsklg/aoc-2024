@@ -1,13 +1,8 @@
-use std::time::Instant;
-
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
-
-    let now = Instant::now();
-    println!("Part 1: {}", part2(&input));
-    println!("{}", now.elapsed().as_millis());
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
