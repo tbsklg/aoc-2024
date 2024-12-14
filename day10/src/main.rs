@@ -4,12 +4,15 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
-    let tracks = Map::from(input).count_tracks();
-    println!("{:?}", tracks);
-    1
+    Map::from(input).count_tracks()
+}
+
+fn part2(input: &str) -> usize {
+    Map::from(input).count_distinct_tracks()
 }
 
 struct Map {
@@ -52,6 +55,48 @@ impl Map {
                     .sum::<usize>()
             })
             .sum()
+    }
+
+    fn count_distinct_tracks(&self) -> usize {
+        self.topographic
+            .iter()
+            .enumerate()
+            .map(|(i, l)| {
+                l.iter()
+                    .enumerate()
+                    .filter(|(_, p)| **p == 0)
+                    .map(move |(j, _)| (i as i32, j as i32))
+                    .map(|p| self.find_distinct_tracks(p))
+                    .sum::<usize>()
+            })
+            .sum()
+    }
+
+    fn find_distinct_tracks(&self, position: (i32, i32)) -> usize {
+        let mut stack = vec![];
+
+        let mut found = 0;
+        stack.push((position, 0));
+
+        while let Some((p, c)) = stack.pop() {
+            if c == 9 {
+                found += 1;
+                continue;
+            }
+
+            for n in neighbors(&p) {
+                match self.get(n) {
+                    Some(x) => {
+                        if x == self.get(p).unwrap() + 1 {
+                            stack.push((n, c + 1))
+                        }
+                    }
+                    None => continue,
+                }
+            }
+        }
+
+        found
     }
 
     fn find_tracks(&self, position: (i32, i32)) -> usize {
