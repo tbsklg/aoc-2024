@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
@@ -6,32 +8,28 @@ fn main() {
 }
 
 fn part1(input: &str) -> usize {
-    blink(create_stones(input), 25).len()
+    let initial_stones = &mut create_stones(input);
+    blink(initial_stones, 25);
+    initial_stones.values().sum()
 }
 
 fn part2(input: &str) -> usize {
-    blink(create_stones(input), 75).len()
+    let initial_stones = &mut create_stones(input);
+    blink(initial_stones, 75);
+    initial_stones.values().sum()
 }
 
-fn blink(stones: Vec<usize>, times: u8) -> Vec<usize> {
-    if times == 0 {
-        return stones;
+fn blink(stones: &mut HashMap<usize, usize>, times: u8) {
+    for _ in 0..times {
+        let mut new_stones = HashMap::new();
+        for (stone, count) in stones.iter() {
+            for new_stone in transform_stone(*stone) {
+                let new_count = new_stones.entry(new_stone).or_insert(0);
+                *new_count += count;
+            }
+        }
+        *stones = new_stones;
     }
-
-    blink(
-        stones
-            .iter()
-            .flat_map(|s| transform_stone(*s))
-            .collect::<Vec<_>>(),
-        times - 1,
-    )
-}
-
-fn create_stones(input: &str) -> Vec<usize> {
-    input
-        .split_whitespace()
-        .map(|x| x.parse::<usize>().unwrap())
-        .collect()
 }
 
 fn transform_stone(stone: usize) -> Vec<usize> {
@@ -42,7 +40,7 @@ fn transform_stone(stone: usize) -> Vec<usize> {
                 return replace_with_two(&i);
             }
 
-            return vec![i * 2024];
+            vec![i * 2024]
         }
     }
 }
@@ -62,6 +60,13 @@ fn has_even_digits(i: &usize) -> bool {
 
 fn is_even(i: usize) -> bool {
     i % 2 == 0
+}
+
+fn create_stones(input: &str) -> HashMap<usize, usize> {
+    input
+        .split_whitespace()
+        .map(|line| (line.parse::<usize>().unwrap(), 1))
+        .collect::<HashMap<usize, usize>>()
 }
 
 #[cfg(test)]
