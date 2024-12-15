@@ -12,11 +12,12 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    Map::from(input).count_distinct_tracks()
+    Map::from(input).count_all_tracks()
 }
 
 struct Map {
     topographic: Vec<Vec<u8>>,
+    trail_heads: Vec<(i32, i32)>,
 }
 
 impl From<&str> for Map {
@@ -28,9 +29,23 @@ impl From<&str> for Map {
                     .map(|c| c.to_digit(10).unwrap() as u8)
                     .collect()
             })
-            .collect();
+            .collect::<Vec<Vec<u8>>>();
 
-        Map { topographic }
+        let trail_heads = topographic
+            .iter()
+            .enumerate()
+            .flat_map(|(i, l)| {
+                l.iter()
+                    .enumerate()
+                    .filter(|(_, p)| **p == 0)
+                    .map(move |(j, _)| (i as i32, j as i32))
+            })
+            .collect::<Vec<(i32, i32)>>();
+
+        Map {
+            topographic,
+            trail_heads,
+        }
     }
 }
 
@@ -43,43 +58,25 @@ impl Map {
     }
 
     fn count_tracks(&self) -> usize {
-        self.topographic
+        self.trail_heads.iter().map(|p| self.find_tracks(*p)).sum()
+    }
+
+    fn count_all_tracks(&self) -> usize {
+        self.trail_heads
             .iter()
-            .enumerate()
-            .map(|(i, l)| {
-                l.iter()
-                    .enumerate()
-                    .filter(|(_, p)| **p == 0)
-                    .map(move |(j, _)| (i as i32, j as i32))
-                    .map(|p| self.find_tracks(p))
-                    .sum::<usize>()
-            })
+            .map(|p| self.find_all_tracks(p))
             .sum()
     }
 
-    fn count_distinct_tracks(&self) -> usize {
-        self.topographic
-            .iter()
-            .enumerate()
-            .map(|(i, l)| {
-                l.iter()
-                    .enumerate()
-                    .filter(|(_, p)| **p == 0)
-                    .map(move |(j, _)| (i as i32, j as i32))
-                    .map(|p| self.find_distinct_tracks(p))
-                    .sum::<usize>()
-            })
-            .sum()
-    }
-
-    fn find_distinct_tracks(&self, position: (i32, i32)) -> usize {
+    fn find_tracks(&self, position: (i32, i32)) -> usize {
         let mut stack = vec![];
+        let mut visited = HashSet::new();
 
         let mut found = 0;
         stack.push((position, 0));
 
         while let Some((p, c)) = stack.pop() {
-            if c == 9 {
+            if visited.insert(p) && c == 9 {
                 found += 1;
                 continue;
             }
@@ -99,34 +96,19 @@ impl Map {
         found
     }
 
-    fn find_tracks(&self, position: (i32, i32)) -> usize {
-        let mut stack = vec![];
-        let mut visited = HashSet::new();
-
-        let mut found = 0;
-        stack.push((position, 0));
-
-        while let Some((p, c)) = stack.pop() {
-            if visited.insert(p) {
-                if c == 9 {
-                    found += 1;
-                    continue;
-                }
-            }
-
-            for n in neighbors(&p) {
-                match self.get(n) {
-                    Some(x) => {
-                        if x == self.get(p).unwrap() + 1 {
-                            stack.push((n, c + 1))
-                        }
-                    }
-                    None => continue,
-                }
-            }
+    fn find_all_tracks(&self, pos: &(i32, i32)) -> usize {
+        if self.get(*pos) == Some(9) {
+            return 1;
         }
 
-        found
+        neighbors(pos)
+            .iter()
+            .filter(|n| match (self.get(**n), self.get(*pos)) {
+                (Some(x), Some(y)) => x == y + 1,
+                _ => false,
+            })
+            .map(|p| self.find_all_tracks(p))
+            .sum::<usize>()
     }
 }
 
