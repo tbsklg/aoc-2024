@@ -20,7 +20,7 @@ impl From<&str> for Map {
     fn from(value: &str) -> Self {
         let area = value
             .lines()
-            .map(|l| l.chars().map(|c| c).collect::<Vec<char>>())
+            .map(|l| l.chars().collect::<Vec<char>>())
             .collect::<Vec<Vec<char>>>();
 
         let rows = area.len();
@@ -33,9 +33,7 @@ impl From<&str> for Map {
 fn calculate_price(areas: Vec<(char, usize, usize)>) -> usize {
     areas
         .iter()
-        .fold(0, |acc, (_, size, perimeter)| {
-            acc + size * perimeter
-        })
+        .fold(0, |acc, (_, size, perimeter)| acc + size * perimeter)
 }
 
 impl Map {
@@ -52,10 +50,11 @@ impl Map {
                 areas.push((self.get(&p).unwrap(), area.0.len(), area.1));
 
                 (acc, areas)
-            }).1
+            })
+            .1
     }
 
-    fn find_area(&self, position: (i32, i32)) -> (HashSet<(i32, i32)>, usize)  {
+    fn find_area(&self, position: (i32, i32)) -> (HashSet<(i32, i32)>, usize) {
         let mut visited = HashSet::new();
         let mut stack = vec![position];
         let mut perimeter: usize = 0;
