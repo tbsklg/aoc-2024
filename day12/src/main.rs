@@ -224,7 +224,7 @@ fn sides(points: &[(i32, i32)]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::sides;
+    use crate::{part2, sides};
 
     #[test]
     fn should_calculate_sides_when_no_points() {
@@ -266,5 +266,12 @@ mod tests {
         let points = vec![(1, 0), (2, 0), (2, 1), (2, 2), (1, 2)];
 
         assert_eq!(8, sides(&points));
+    }
+
+    #[test]
+    fn calculate_price_for_sides() {
+        let puzzle = "AAAAAA\nAAABBA\nAAABBA\nABBAAA\nABBAAA\nAAAAAA";
+
+        assert_eq!(368, part2(puzzle));
     }
 }
