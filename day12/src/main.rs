@@ -12,7 +12,7 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    calculate_price_2(Map::from(input).find_areas())
+    calculate_price_for_sides(Map::from(input).find_areas())
 }
 
 struct Map {
@@ -41,7 +41,7 @@ fn calculate_price(areas: Vec<Area>) -> usize {
         .fold(0, |acc, area| acc + area.points.len() * area.perimeter)
 }
 
-fn calculate_price_2(areas: Vec<Area>) -> usize {
+fn calculate_price_for_sides(areas: Vec<Area>) -> usize {
     areas
         .iter()
         .map(|area| area.points.len() * sides(&area.points.iter().copied().collect::<Vec<_>>()))
@@ -175,6 +175,7 @@ fn sides(points: &[(i32, i32)]) -> usize {
                     .map_or(1, |_| 0);
             }
             (true, true, false) => {
+                // - 1
                 sides += if top {
                     0
                 } else {
@@ -186,6 +187,7 @@ fn sides(points: &[(i32, i32)]) -> usize {
                     .map_or(1, |_| 0);
             }
             (true, false, true) => {
+                // + 1
                 sides += if top {
                     0
                 } else {
