@@ -162,7 +162,8 @@ fn sides(points: &[(i32, i32)]) -> usize {
             directions.contains(&Direction::Right),
             directions.contains(&Direction::Down),
         );
-
+        
+        // Todo: Refactor this
         match (bottom, left, right) {
             (true, true, true) => {
                 sides += points
@@ -176,11 +177,7 @@ fn sides(points: &[(i32, i32)]) -> usize {
             }
             (true, true, false) => {
                 // - 1
-                sides += if top {
-                    0
-                } else {
-                    1
-                };
+                sides += if top { 0 } else { 1 };
                 sides += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 - 1)
@@ -188,11 +185,7 @@ fn sides(points: &[(i32, i32)]) -> usize {
             }
             (true, false, true) => {
                 // + 1
-                sides += if top {
-                    0
-                } else {
-                    1
-                };
+                sides += if top { 0 } else { 1 };
                 sides += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 + 1)
@@ -214,22 +207,14 @@ fn sides(points: &[(i32, i32)]) -> usize {
                     .map_or(1, |_| 0);
             }
             (true, true, false) => {
-                sides += if bottom {
-                    0
-                } else {
-                    1
-                };
+                sides += if bottom { 0 } else { 1 };
                 sides += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 - 1)
                     .map_or(1, |_| 0);
             }
             (true, false, true) => {
-                sides += if bottom {
-                    0
-                } else {
-                    1
-                };
+                sides += if bottom { 0 } else { 1 };
                 sides += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 + 1)
