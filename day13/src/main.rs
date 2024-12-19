@@ -3,14 +3,14 @@ use regex::Regex;
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
-    part1(&input);
+    println!("Part 1: {}", part1(&input));
 }
 
 fn part1(input: &str) -> usize {
-    let machines = create_claw_machines(input);
-
-    println!("{:#?}", machines);
-    2
+    create_claw_machines(input)
+        .iter()
+        .filter_map(|machine| machine.pushes_to_win())
+        .sum::<usize>()
 }
 
 fn create_claw_machines(input: &str) -> Vec<ClawMachine> {
@@ -41,6 +41,23 @@ impl From<&str> for ClawMachine {
             b: numbers[1],
             prize: numbers[2],
         }
+    }
+}
+
+impl ClawMachine {
+    fn pushes_to_win(&self) -> Option<usize> {
+        (0..100)
+            .flat_map(|i| {
+                (0..100).map(move |j| {
+                    let x = (self.a.0 * i) + (self.b.0 * j);
+                    let y = (self.a.1 * i) + (self.b.1 * j);
+
+                    (i, j, x, y)
+                })
+            })
+            .find(|(_, _, x, y)| *x == self.prize.0 && *y == self.prize.1)
+            .map(|(i, j, _, _)| (i * 3, j))
+            .map(|(i, j)| i + j)
     }
 }
 
