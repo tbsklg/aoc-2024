@@ -130,10 +130,10 @@ enum Direction {
 
 fn directions(point: &(i32, i32), points: &[(i32, i32)]) -> Vec<Direction> {
     [
-        ((point.0 + 1, point.1), Direction::Down),
-        ((point.0 - 1, point.1), Direction::Up),
-        ((point.0, point.1 + 1), Direction::Right),
-        ((point.0, point.1 - 1), Direction::Left),
+        ((point.0 + 1, point.1), Direction::Right),
+        ((point.0 - 1, point.1), Direction::Left),
+        ((point.0, point.1 + 1), Direction::Up),
+        ((point.0, point.1 - 1), Direction::Down),
     ]
     .into_iter()
     .filter_map(|(p, d)| if points.contains(&p) { Some(d) } else { None })
@@ -165,33 +165,25 @@ fn sides(points: &[(i32, i32)]) -> usize {
 
         match (bottom, left, right) {
             (true, true, true) => {
-                sides += points
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 - 1)
                     .map_or(1, |_| 0);
-                sides += points
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 + 1)
                     .map_or(1, |_| 0);
             }
-            (true, true, false) => {
-                sides += if top {
-                    0
-                } else {
-                    1
-                };
-                sides += points
+            (Some(_), Some(_), None) => {
+                sides_for_p += top.map_or(1, |_| 0);
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 - 1)
                     .map_or(1, |_| 0);
             }
-            (true, false, true) => {
-                sides += if top {
-                    0
-                } else {
-                    1
-                };
-                sides += points
+            (Some(_), None, Some(_)) => {
+                sides_for_p += top.map_or(1, |_| 0);
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 + 1 && p.1 == point.1 + 1)
                     .map_or(1, |_| 0);
@@ -200,41 +192,35 @@ fn sides(points: &[(i32, i32)]) -> usize {
         };
 
         match (top, left, right) {
-            (true, true, true) => {
-                sides += points
+            (Some(_), Some(_), Some(_)) => {
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 + 1)
                     .map_or(1, |_| 0);
 
-                sides += points
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 - 1)
                     .map_or(1, |_| 0);
             }
-            (true, true, false) => {
-                sides += if bottom {
-                    0
-                } else {
-                    1
-                };
-                sides += points
+            (Some(_), Some(_), None) => {
+                sides_for_p += bottom.map_or(1, |_| 0);
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 - 1)
                     .map_or(1, |_| 0);
             }
-            (true, false, true) => {
-                sides += if bottom {
-                    0
-                } else {
-                    1
-                };
-                sides += points
+            (Some(_), None, Some(_)) => {
+                sides_for_p += bottom.map_or(1, |_| 0);
+                sides_for_p += points
                     .iter()
                     .find(|p| p.0 == point.0 - 1 && p.1 == point.1 + 1)
                     .map_or(1, |_| 0);
             }
             _ => (),
         }
+
+        sides += sides_for_p;
     }
     sides
 }
