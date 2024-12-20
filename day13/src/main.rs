@@ -4,13 +4,28 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
-fn part1(input: &str) -> usize {
+fn part1(input: &str) -> isize {
     create_claw_machines(input)
         .iter()
-        .filter_map(|machine| machine.pushes_to_win())
-        .sum::<usize>()
+        .map(|machine| machine.cramers_rule().map_or(0, |(x, y)| x * 3 + y))
+        .sum()
+}
+
+const PRIZE_OFFSET: isize = 10_000_000_000_000;
+
+fn part2(input: &str) -> isize {
+    create_claw_machines(input)
+        .iter()
+        .map(|machine| ClawMachine {
+            a: machine.a,
+            b: machine.b,
+            prize: (machine.prize.0 + PRIZE_OFFSET, machine.prize.1 + PRIZE_OFFSET),
+        })
+        .map(|machine| machine.cramers_rule().map_or(0, |(x, y)| x * 3 + y))
+        .sum()
 }
 
 fn create_claw_machines(input: &str) -> Vec<ClawMachine> {
@@ -22,9 +37,9 @@ fn create_claw_machines(input: &str) -> Vec<ClawMachine> {
 
 #[derive(Debug)]
 struct ClawMachine {
-    a: (usize, usize),
-    b: (usize, usize),
-    prize: (usize, usize),
+    a: (isize, isize),
+    b: (isize, isize),
+    prize: (isize, isize),
 }
 
 impl From<&str> for ClawMachine {
@@ -34,7 +49,7 @@ impl From<&str> for ClawMachine {
         let numbers = value
             .lines()
             .map(extract_numbers)
-            .collect::<Vec<(usize, usize)>>();
+            .collect::<Vec<(isize, isize)>>();
 
         Self {
             a: numbers[0],
@@ -45,28 +60,34 @@ impl From<&str> for ClawMachine {
 }
 
 impl ClawMachine {
-    fn pushes_to_win(&self) -> Option<usize> {
-        (0..100)
-            .flat_map(|i| {
-                (0..100).map(move |j| {
-                    let x = (self.a.0 * i) + (self.b.0 * j);
-                    let y = (self.a.1 * i) + (self.b.1 * j);
+    // see https://en.wikipedia.org/wiki/Cramer%27s_rule
+    fn cramers_rule(&self) -> Option<(isize, isize)> {
+        let (ax, ay) = self.a;
+        let (bx, by) = self.b;
+        let (px, py) = self.prize;
 
-                    (i, j, x, y)
-                })
-            })
-            .find(|(_, _, x, y)| *x == self.prize.0 && *y == self.prize.1)
-            .map(|(i, j, _, _)| (i * 3, j))
-            .map(|(i, j)| i + j)
+        let det = ax * by - ay * bx;
+        if det == 0 {
+            return None;
+        }
+
+        let da = px * by - py * bx;
+        let db = ax * py - ay * px;
+
+        if da % det != 0 || db % det != 0 {
+            return None;
+        }
+
+        Some((da / det, db / det))
     }
 }
 
-fn extract_numbers(line: &str) -> (usize, usize) {
+fn extract_numbers(line: &str) -> (isize, isize) {
     let re = Regex::new(r"\b\d+\b").unwrap();
     let caps = re
         .find_iter(line)
         .map(|m| m.as_str().parse().unwrap())
-        .collect::<Vec<usize>>();
+        .collect::<Vec<isize>>();
 
     (caps[0], caps[1])
 }
