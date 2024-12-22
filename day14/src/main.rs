@@ -6,7 +6,11 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    print_robots(part2(&create_robots(&input)));
 }
+
+const WIDTH: isize = 101;
+const HEIGHT: isize = 103;
 
 fn part1(input: &str) -> usize {
     let robots: HashMap<(isize, isize), usize> = create_robots(input)
@@ -17,12 +21,50 @@ fn part1(input: &str) -> usize {
             acc
         });
 
-    println!("{:?}", robots);
-    0
+    let hs = ((HEIGHT as f32 - 1f32) / 2f32).floor() as isize;
+    let vs = ((WIDTH as f32 - 1f32) / 2f32).floor() as isize;
+
+    let (q1, q2, q3, q4) = robots
+        .iter()
+        .fold((0, 0, 0, 0), |(q1, q2, q3, q4), (k, v)| {
+            if k.0 < vs && k.1 < hs {
+                return (q1 + v, q2, q3, q4);
+            }
+
+            if k.0 > vs && k.1 < hs {
+                return (q1, q2 + v, q3, q4);
+            }
+
+            if k.0 < vs && k.1 > hs {
+                return (q1, q2, q3 + v, q4);
+            }
+
+            if k.0 > vs && k.1 > hs {
+                return (q1, q2, q3, q4 + v);
+            }
+
+            (q1, q2, q3, q4)
+        });
+
+    vec![q1, q2, q3, q4].iter().product()
 }
 
-const WIDTH: isize = 11;
-const HEIGHT: isize = 7;
+fn part2(robots: &Vec<Robot>) -> Vec<(isize, isize)> {
+    robots.iter().map(|r| simulate(r, 7051)).collect()
+}
+
+fn print_robots(points: Vec<(isize, isize)>) {
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            if points.contains(&(x, y)) {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
+}
 
 fn create_robots(input: &str) -> Vec<Robot> {
     input.lines().map(Robot::from).collect::<Vec<Robot>>()
@@ -32,12 +74,14 @@ fn simulate(r: &Robot, times: isize) -> (isize, isize) {
     let (rx, ry) = r.pos;
     let (vx, vy) = r.vel;
 
-    ((rx + 1 + vx * times).rem_euclid(WIDTH), (ry + 1 + vy * times).rem_euclid(HEIGHT))
+    (
+        (rx + vx * times).rem_euclid(WIDTH),
+        (ry + vy * times).rem_euclid(HEIGHT),
+    )
 }
 
 #[derive(Debug, PartialEq)]
 struct Robot {
-    // x, y
     pos: (isize, isize),
     vel: (isize, isize),
 }
