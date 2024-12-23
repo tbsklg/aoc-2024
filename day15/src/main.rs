@@ -162,3 +162,17 @@ impl Map {
         self.warehouse[t][l] = c;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::part1;
+
+    #[test]  
+    fn should_calculate_gps() {
+        let input = "########\n#..O.O.#\n#.#.O..#\n#..@.O.#\n#OO....#\n########\n\n<^^>>>vv<v>>v<<";
+
+        let score = part1(input);
+
+        assert_eq!(1521, score);
+    }
+}
