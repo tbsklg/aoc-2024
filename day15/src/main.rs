@@ -6,12 +6,14 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let instructions: Vec<&str> = input.split("\n\n").collect();
+    let moves: Vec<Dir> = instructions[1]
+        .lines()
+        .flat_map(|l| l.trim_end().chars().map(Dir::from))
+        .collect();
+
     let map = &mut Map::from(instructions[0]);
-    let moves: Vec<Dir> = instructions[1].trim_end().chars().map(Dir::from).collect();
-
     map.move_robot(moves);
-
-    0
+    map.calculate_gps()
 }
 
 #[derive(Debug)]
@@ -92,41 +94,64 @@ impl Map {
                     self.set(self.robot, '.');
                     self.set(next_robot_position, '@');
                     self.robot = next_robot_position;
-                    println!("Robot moved to {:?}", next_robot_position);
-                    self.print_warehouse();
                     continue;
                 }
-                Some('O') => {
-                    self.try_to_move_box(next_robot_position, m.step());
-                    self.print_warehouse();
-                }
+                Some('O') => match self.try_to_move_box(next_robot_position, m.step()) {
+                    Some(free) => {
+                        self.set(self.robot, '.');
+                        self.set(free, '@');
+                        self.robot = free;
+                    }
+                    None => continue,
+                },
                 _ => continue,
             }
-
         }
     }
-    
-    fn try_to_move_box(&mut self, box_position: (usize, usize), step: (i32, i32)) {
-        let next_box_position = (box_position.0 as i32 + step.0, box_position.1 as i32 + step.1);
-        let next_box_position = (next_box_position.0 as usize, next_box_position.1 as usize);
+
+    fn try_to_move_box(&mut self, bp: (usize, usize), step: (i32, i32)) -> Option<(usize, usize)> {
+        let nb = (
+            (bp.0 as i32 + step.0) as usize,
+            (bp.1 as i32 + step.1) as usize,
+        );
 
         loop {
-            match self.get(next_box_position) {
-                Some('#') => break,
+            match self.get(nb) {
+                Some('#') => return None,
                 Some('.') => {
-                    self.set(box_position, '.');
-                    self.set(next_box_position, 'O');
-                    break;
+                    self.set(bp, '.');
+                    self.set(nb, 'O');
+                    return Some(bp);
                 }
-                _ => {
-                    self.try_to_move_box(next_box_position, step);
-                    self.set(box_position, '.');
-                    self.set(next_box_position, 'O');
-                    break;
-                }
+                Some('O') => match self.try_to_move_box(nb, step) {
+                    Some(fp) => {
+                        self.set(bp, '.');
+                        self.set(fp, 'O');
+                        return Some(bp);
+                    }
+                    None => return None,
+                },
+                _ => return None,
             }
         }
+    }
 
+    fn calculate_gps(&self) -> usize {
+        self.warehouse
+            .iter()
+            .enumerate()
+            .flat_map(|(i, row)| {
+                row.iter().enumerate().filter_map(
+                    move |(j, &c)| {
+                        if c == 'O' {
+                            Some(i * 100 + j)
+                        } else {
+                            None
+                        }
+                    },
+                )
+            })
+            .sum()
     }
 
     fn get(&self, (l, t): (usize, usize)) -> Option<char> {
@@ -135,12 +160,5 @@ impl Map {
 
     fn set(&mut self, (l, t): (usize, usize), c: char) {
         self.warehouse[t][l] = c;
-    }
-
-    fn print_warehouse(&self) {
-        self.warehouse.iter().for_each(|row| {
-            row.iter().for_each(|c| print!("{}", c));
-            println!();
-        });
     }
 }
