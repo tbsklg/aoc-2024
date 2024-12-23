@@ -99,10 +99,10 @@ impl Map {
                     continue;
                 }
                 Some('O') => match self.try_to_move_box(next_robot_position, m.step()) {
-                    Some(free) => {
+                    Some(free_position) => {
                         self.set(self.robot, '.');
-                        self.set(free, '@');
-                        self.robot = free;
+                        self.set(free_position, '@');
+                        self.robot = free_position;
                     }
                     None => continue,
                 },
