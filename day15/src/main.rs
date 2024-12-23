@@ -67,13 +67,15 @@ impl From<&str> for Map {
         let warehouse: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
 
         let robot = warehouse.iter().enumerate().find_map(|(row, line)| {
-            line.iter().enumerate().find_map(|(col, &c)| {
-                if c == '@' {
-                    Some((row as usize, col as usize))
-                } else {
-                    None
-                }
-            })
+            line.iter().enumerate().find_map(
+                |(col, &c)| {
+                    if c == '@' {
+                        Some((row, col))
+                    } else {
+                        None
+                    }
+                },
+            )
         });
 
         Self {
@@ -115,24 +117,22 @@ impl Map {
             (bp.1 as i32 + step.1) as usize,
         );
 
-        loop {
-            match self.get(nb) {
-                Some('#') => return None,
-                Some('.') => {
-                    self.set(bp, '.');
-                    self.set(nb, 'O');
-                    return Some(bp);
-                }
-                Some('O') => match self.try_to_move_box(nb, step) {
-                    Some(fp) => {
-                        self.set(bp, '.');
-                        self.set(fp, 'O');
-                        return Some(bp);
-                    }
-                    None => return None,
-                },
-                _ => return None,
+        match self.get(nb) {
+            Some('#') => None,
+            Some('.') => {
+                self.set(bp, '.');
+                self.set(nb, 'O');
+                Some(bp)
             }
+            Some('O') => match self.try_to_move_box(nb, step) {
+                Some(fp) => {
+                    self.set(bp, '.');
+                    self.set(fp, 'O');
+                    Some(bp)
+                }
+                None => None,
+            },
+            _ => None,
         }
     }
 
@@ -167,7 +167,7 @@ impl Map {
 mod tests {
     use crate::part1;
 
-    #[test]  
+    #[test]
     fn should_calculate_gps() {
         let input = "########\n#..O.O.#\n#.#.O..#\n#..@.O.#\n#OO....#\n########\n\n<^^>>>vv<v>>v<<";
 
