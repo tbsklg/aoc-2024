@@ -111,24 +111,28 @@ impl Map {
         }
     }
 
-    fn try_to_move_box(&mut self, bp: (usize, usize), step: (i32, i32)) -> Option<(usize, usize)> {
-        let nb = (
-            (bp.0 as i32 + step.0) as usize,
-            (bp.1 as i32 + step.1) as usize,
+    fn try_to_move_box(
+        &mut self,
+        box_position: (usize, usize),
+        step: (i32, i32),
+    ) -> Option<(usize, usize)> {
+        let next_box_position = (
+            (box_position.0 as i32 + step.0) as usize,
+            (box_position.1 as i32 + step.1) as usize,
         );
 
-        match self.get(nb) {
+        match self.get(next_box_position) {
             Some('#') => None,
             Some('.') => {
-                self.set(bp, '.');
-                self.set(nb, 'O');
-                Some(bp)
+                self.set(box_position, '.');
+                self.set(next_box_position, 'O');
+                Some(box_position)
             }
-            Some('O') => match self.try_to_move_box(nb, step) {
-                Some(fp) => {
-                    self.set(bp, '.');
-                    self.set(fp, 'O');
-                    Some(bp)
+            Some('O') => match self.try_to_move_box(next_box_position, step) {
+                Some(free_position) => {
+                    self.set(box_position, '.');
+                    self.set(free_position, 'O');
+                    Some(box_position)
                 }
                 None => None,
             },
