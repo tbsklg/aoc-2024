@@ -8,7 +8,7 @@ pub fn part2(input: &str) -> usize {
         .collect();
 
     let map = &mut Map::from(instructions[0]);
-    map.move_robot(moves);
+    map.move_boxes(moves);
     map.calculate_gps()
 }
 
@@ -39,15 +39,6 @@ impl Dir {
             Dir::Left => (l - 1, t),
             Dir::Right => (l + 1, t),
             Dir::Down => (l, t + 1),
-        }
-    }
-
-    fn step(&self) -> (i32, i32) {
-        match self {
-            Dir::Up => (0, -1),
-            Dir::Left => (-1, 0),
-            Dir::Right => (1, 0),
-            Dir::Down => (0, 1),
         }
     }
 }
@@ -95,58 +86,79 @@ impl From<&str> for Map {
 }
 
 impl Map {
-    fn move_robot(&mut self, moves: Vec<Dir>) {
-        self.print_warehouse();
-        let mut visited: HashSet<(usize, usize)> = HashSet::new();
-        let mut stack = vec![self.robot];
+    fn move_boxes(&mut self, moves: Vec<Dir>) {
+        for m in moves {
+            let mut stack = vec![self.robot];
+            let mut captures: HashSet<(usize, usize)> = HashSet::new();
+            let mut can_move = true;
 
-        for m in moves.get(0..5).unwrap() {
             while let Some(target) = stack.pop() {
                 let next = m.next(target);
-                match self.get(next) {
-                    Some('#') => continue,
-                    Some('[') => {
-                        if visited.contains(&target) {
-                            continue;
-                        }
-                        stack.push(next);
-                        stack.push((next.0 + 1, next.1));
+                if captures.contains(&next) {
+                    continue;
+                }
 
-                        visited.insert(next);
-                        visited.insert((next.0 + 1, next.1));
+                match self.get(next) {
+                    Some('#') => {
+                        can_move = false;
+                        break;
+                    }
+                    Some('[') => {
+                        let right = (next.0 + 1, next.1);
+
+                        if captures.insert(next) {
+                            stack.push(next);
+                        }
+
+                        if captures.insert(right) {
+                            stack.push(right);
+                        }
                     }
                     Some(']') => {
-                        if visited.contains(&next) {
-                            continue;
+                        let left = (next.0 - 1, next.1);
+
+                        if captures.insert(next) {
+                            stack.push(next);
                         }
 
-                        stack.push(next);
-                        stack.push((next.0 - 1, next.1));
-
-                        visited.insert(next);
-                        visited.insert((next.0 - 1, next.1));
+                        if captures.insert(left) {
+                            stack.push(left);
+                        }
                     }
                     _ => continue,
                 }
             }
 
-            let old_state = self.clone();
-            
-            let next_robot_position = m.next(self.robot);
-            self.set(next_robot_position, '@');
-            self.set(self.robot, '.');
-            self.robot = next_robot_position;
-            
-            for target in &visited {
-                let old = old_state.get(*target).unwrap();
-                self.set(m.next(*target), old); 
+            if !can_move {
+                continue;
             }
 
-            visited.clear();
-            stack.clear();
+            self.move_targets(&captures, &m);
+            self.move_robot(m);
         }
-        self.print_warehouse();
-        println!("{:?}", visited);
+    }
+
+    fn move_targets(&mut self, captures: &HashSet<(usize, usize)>, dir: &Dir) {
+        let old_state = self.clone();
+        self.clear(captures);
+
+        for capture in captures {
+            let old = old_state.get(*capture).unwrap();
+
+            self.set(dir.next(*capture), old);
+        }
+    }
+
+    fn clear(&mut self, captures: &HashSet<(usize, usize)>) {
+        for capture in captures {
+            self.set(*capture, '.');
+        }
+    }
+
+    fn move_robot(&mut self, dir: Dir) {
+        self.set(self.robot, '.');
+        self.set(dir.next(self.robot), '@');
+        self.robot = dir.next(self.robot);
     }
 
     fn calculate_gps(&self) -> usize {
@@ -156,7 +168,7 @@ impl Map {
             .flat_map(|(i, row)| {
                 row.iter().enumerate().filter_map(
                     move |(j, &c)| {
-                        if c == 'O' {
+                        if c == '[' {
                             Some(i * 100 + j)
                         } else {
                             None
@@ -173,14 +185,5 @@ impl Map {
 
     fn set(&mut self, (l, t): (usize, usize), c: char) {
         self.warehouse[t][l] = c;
-    }
-
-    fn print_warehouse(&self) {
-        for row in &self.warehouse {
-            for c in row {
-                print!("{}", c);
-            }
-            println!();
-        }
     }
 }
