@@ -1,4 +1,4 @@
-use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -36,7 +36,7 @@ fn create_map(input: &str) -> Vec<Vec<char>> {
 
 const DIRS: [(i32, i32); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];
 
-fn find_start(map: &Vec<Vec<char>>) -> Option<(i32, i32)> {
+fn find_start(map: &[Vec<char>]) -> Option<(i32, i32)> {
     map.iter().enumerate().find_map(|(row, line)| {
         line.iter().enumerate().find_map(|(col, &c)| {
             if c == 'S' {
@@ -48,7 +48,7 @@ fn find_start(map: &Vec<Vec<char>>) -> Option<(i32, i32)> {
     })
 }
 
-fn get(map: &Vec<Vec<char>>, (x, y): (i32, i32)) -> char {
+fn get(map: &[Vec<char>], (x, y): (i32, i32)) -> char {
     map[y as usize][x as usize]
 }
 
@@ -70,9 +70,12 @@ impl PartialOrd for State {
     }
 }
 
-fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
+type Pos = (i32, i32);
+type Dir = (i32, i32);
+
+fn shortest_path(map: &[Vec<char>], start: State) -> Option<usize> {
     let mut queue = BinaryHeap::new();
-    let mut seen: HashSet<((i32, i32), (i32, i32))> = HashSet::new();
+    let mut seen: HashSet<(Pos, Dir)> = HashSet::new();
 
     queue.push(start);
 
@@ -105,11 +108,10 @@ fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
     None
 }
 
-fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
+fn all_path(map: &[Vec<char>], start: State) -> Option<usize> {
     let mut queue = BinaryHeap::new();
-    let mut distances: HashMap<((i32, i32), (i32, i32)), usize> = HashMap::new();
-    let mut backtrack: HashMap<((i32, i32), (i32, i32)), HashSet<((i32, i32), (i32, i32))>> =
-        HashMap::new();
+    let mut distances: HashMap<(Pos, Dir), usize> = HashMap::new();
+    let mut backtrack: HashMap<(Pos, Dir), HashSet<(Pos, Dir)>> = HashMap::new();
     let mut min_cost = usize::MAX;
 
     let mut end_states = HashSet::new();
@@ -155,7 +157,7 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
             distances.insert((next_state.pos, next_state.dir), next_state.cost);
             backtrack
                 .entry((next_state.pos, next_state.dir))
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert((state.pos, state.dir));
             queue.push(next_state);
         }
@@ -177,11 +179,11 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
             }
         }
     }
-    
+
     Some(tiles.len())
 }
 
-fn rotation_score((dx, dy): (i32, i32), (nx, ny): (i32, i32)) -> usize {
+fn rotation_score((dx, dy): Pos, (nx, ny): Pos) -> usize {
     if dx == nx && dy == ny {
         0
     } else {
