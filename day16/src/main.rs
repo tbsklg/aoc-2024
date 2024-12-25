@@ -143,10 +143,10 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
                 dir: (nx, ny),
                 cost: state.cost + 1 + rotation_score((dx, dy), (nx, ny)),
             })
-            .filter(|state| get(map, state.pos) != '#') // Avoid walls
-            .filter(|state| {
+            .filter(|ns| get(map, ns.pos) == '.' || get(map, ns.pos) == 'E')
+            .filter(|ns| {
                 distances
-                    .get(&(state.pos, state.dir))
+                    .get(&(ns.pos, ns.dir))
                     .map_or(true, |&dist| state.cost < dist)
             })
             .collect::<Vec<_>>();
@@ -177,14 +177,8 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
             }
         }
     }
-
-    println!("{:?}", tiles.len());
-
-    if min_cost == usize::MAX {
-        None
-    } else {
-        Some(min_cost)
-    }
+    
+    Some(tiles.len())
 }
 
 fn rotation_score((dx, dy): (i32, i32), (nx, ny): (i32, i32)) -> usize {
