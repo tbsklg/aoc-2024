@@ -1,9 +1,10 @@
-use std::collections::{BinaryHeap, HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
@@ -14,6 +15,16 @@ fn part1(input: &str) -> usize {
         cost: 0,
     };
     shortest_path(&map, initial_state).unwrap()
+}
+
+fn part2(input: &str) -> usize {
+    let map = create_map(input);
+    let initial_state = State {
+        pos: find_start(&map).unwrap(),
+        dir: (1, 0),
+        cost: 0,
+    };
+    all_path(&map, initial_state).unwrap()
 }
 
 fn create_map(input: &str) -> Vec<Vec<char>> {
@@ -91,6 +102,42 @@ fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
         queue.extend(next_states);
     }
 
+    None
+}
+
+fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
+    let mut queue = BinaryHeap::new();
+    let mut seen: HashSet<((i32, i32), (i32, i32))> = HashSet::new();
+    let mut distances: HashMap<((i32, i32), (i32, i32)), usize> = HashMap::new();
+
+    queue.push(start);
+
+    while let Some(state) = queue.pop() {
+        if seen.contains(&(state.pos, state.dir)) {
+            continue;
+        }
+        seen.insert((state.pos, state.dir));
+
+        if get(map, state.pos) == 'E' {
+            distances.insert((state.pos, state.dir), state.cost);
+        }
+
+        let (x, y) = state.pos;
+        let (dx, dy) = state.dir;
+
+        let next_states = DIRS
+            .iter()
+            .map(|&(nx, ny)| State {
+                pos: (x + nx, y + ny),
+                dir: (nx, ny),
+                cost: state.cost + 1 + rotation_score((dx, dy), (nx, ny)),
+            })
+            .filter(|state| get(map, state.pos) != '#')
+            .collect::<Vec<_>>();
+
+        queue.extend(next_states);
+    }
+    println!("{:?}", distances);
     None
 }
 
