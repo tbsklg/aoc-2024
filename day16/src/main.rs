@@ -107,19 +107,28 @@ fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
 
 fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
     let mut queue = BinaryHeap::new();
-    let mut seen: HashSet<((i32, i32), (i32, i32))> = HashSet::new();
     let mut distances: HashMap<((i32, i32), (i32, i32)), usize> = HashMap::new();
+    let mut min_cost = usize::MAX;
+
+    let mut end_states = HashSet::new();
 
     queue.push(start);
+    distances.insert((start.pos, start.dir), 0);
 
     while let Some(state) = queue.pop() {
-        if seen.contains(&(state.pos, state.dir)) {
-            continue;
+        if let Some(&dist) = distances.get(&(state.pos, state.dir)) {
+            if state.cost > dist {
+                continue;
+            }
         }
-        seen.insert((state.pos, state.dir));
 
         if get(map, state.pos) == 'E' {
-            distances.insert((state.pos, state.dir), state.cost);
+            if state.cost > min_cost {
+                break;
+            }
+
+            min_cost = state.cost;
+            end_states.insert((state.pos, state.dir, state.cost));
         }
 
         let (x, y) = state.pos;
@@ -132,13 +141,27 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
                 dir: (nx, ny),
                 cost: state.cost + 1 + rotation_score((dx, dy), (nx, ny)),
             })
-            .filter(|state| get(map, state.pos) != '#')
+            .filter(|state| get(map, state.pos) != '#') // Avoid walls
+            .filter(|state| {
+                distances
+                    .get(&(state.pos, state.dir))
+                    .map_or(true, |&dist| state.cost < dist)
+            })
             .collect::<Vec<_>>();
 
-        queue.extend(next_states);
+        for next_state in next_states {
+            distances.insert((next_state.pos, next_state.dir), next_state.cost);
+            queue.push(next_state);
+        }
     }
-    println!("{:?}", distances);
-    None
+
+    println!("{:?}", end_states);
+
+    if min_cost == usize::MAX {
+        None
+    } else {
+        Some(min_cost)
+    }
 }
 
 fn rotation_score((dx, dy): (i32, i32), (nx, ny): (i32, i32)) -> usize {
