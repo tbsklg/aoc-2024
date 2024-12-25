@@ -108,6 +108,8 @@ fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
 fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
     let mut queue = BinaryHeap::new();
     let mut distances: HashMap<((i32, i32), (i32, i32)), usize> = HashMap::new();
+    let mut backtrack: HashMap<((i32, i32), (i32, i32)), HashSet<((i32, i32), (i32, i32))>> =
+        HashMap::new();
     let mut min_cost = usize::MAX;
 
     let mut end_states = HashSet::new();
@@ -151,11 +153,32 @@ fn all_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
 
         for next_state in next_states {
             distances.insert((next_state.pos, next_state.dir), next_state.cost);
+            backtrack
+                .entry((next_state.pos, next_state.dir))
+                .or_insert(HashSet::new())
+                .insert((state.pos, state.dir));
             queue.push(next_state);
         }
     }
 
-    println!("{:?}", end_states);
+    let mut tiles = HashSet::new();
+    let mut states = end_states
+        .iter()
+        .map(|&(pos, dir, _)| (pos, dir))
+        .collect::<Vec<_>>();
+
+    while let Some((pos, dir)) = states.pop() {
+        tiles.insert(pos);
+
+        if let Some(back) = backtrack.get(&(pos, dir)) {
+            for &prev in back {
+                tiles.insert(prev.0);
+                states.push(prev);
+            }
+        }
+    }
+
+    println!("{:?}", tiles.len());
 
     if min_cost == usize::MAX {
         None
