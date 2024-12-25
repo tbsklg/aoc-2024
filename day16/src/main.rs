@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashSet, VecDeque};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -10,6 +10,7 @@ fn part1(input: &str) -> usize {
     let map = create_map(input);
     let initial_state = State {
         pos: find_start(&map).unwrap(),
+        dir: (1, 0),
         cost: 0,
     };
     shortest_path(&map, initial_state).unwrap()
@@ -22,12 +23,7 @@ fn create_map(input: &str) -> Vec<Vec<char>> {
         .collect()
 }
 
-fn dirs((x, y): (i32, i32)) -> Vec<(i32, i32)> {
-    [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        .iter()
-        .map(|(dx, dy)| (x + dx, y + dy))
-        .collect()
-}
+const DIRS: [(i32, i32); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];
 
 fn find_start(map: &Vec<Vec<char>>) -> Option<(i32, i32)> {
     map.iter().enumerate().find_map(|(row, line)| {
@@ -48,41 +44,60 @@ fn get(map: &Vec<Vec<char>>, (x, y): (i32, i32)) -> char {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct State {
     pos: (i32, i32),
+    dir: (i32, i32),
     cost: usize,
 }
 
-fn calculate_score(steps: usize, rotations: usize) -> usize {
-    steps + rotations * 1000
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 fn shortest_path(map: &Vec<Vec<char>>, start: State) -> Option<usize> {
-    let mut queue = VecDeque::new();
-    let mut seen: HashSet<(i32, i32)> = HashSet::new();
+    let mut queue = BinaryHeap::new();
+    let mut seen: HashSet<((i32, i32), (i32, i32))> = HashSet::new();
 
-    queue.push_back(start);
+    queue.push(start);
 
-    while let Some(state) = queue.pop_front() {
-        if seen.contains(&state.pos) {
+    while let Some(state) = queue.pop() {
+        if seen.contains(&(state.pos, state.dir)) {
             continue;
         }
-        seen.insert(state.pos);
+        seen.insert((state.pos, state.dir));
 
         if get(map, state.pos) == 'E' {
-            println!("Found exit in {} steps", state.cost);
             return Some(state.cost);
         }
 
-        let next_states = dirs(state.pos)
+        let (x, y) = state.pos;
+        let (dx, dy) = state.dir;
+
+        let next_states = DIRS
             .iter()
-            .filter(|pos| get(map, **pos) != '#')
-            .map(|&pos| State {
-                pos,
-                cost: state.cost + 1,
+            .map(|&(nx, ny)| State {
+                pos: (x + nx, y + ny),
+                dir: (nx, ny),
+                cost: state.cost + 1 + rotation_score((dx, dy), (nx, ny)),
             })
+            .filter(|state| get(map, state.pos) != '#')
             .collect::<Vec<_>>();
 
         queue.extend(next_states);
     }
 
     None
+}
+
+fn rotation_score((dx, dy): (i32, i32), (nx, ny): (i32, i32)) -> usize {
+    if dx == nx && dy == ny {
+        0
+    } else {
+        1000
+    }
 }
