@@ -12,12 +12,7 @@ fn part1(input: &str) -> Option<String> {
     let register = &mut extract_register(input);
     let program = extract_program(input);
 
-    run(
-        register,
-        program,
-        0,
-        &mut vec![],
-    )
+    run(register, program, 0, &mut vec![])
 }
 
 fn extract_register(input: &str) -> Register {
@@ -37,9 +32,9 @@ fn extract_register(input: &str) -> Register {
 
 fn extract_program(input: &str) -> Vec<usize> {
     let re = Regex::new(r"\d+").unwrap();
-    
+
     let input = input.split("\n\n").collect::<Vec<&str>>();
-    
+
     re.captures_iter(input[1])
         .map(|c| c.get(0).unwrap().as_str().parse().unwrap())
         .collect()
@@ -54,23 +49,16 @@ fn run(
     let opcode = program.get(pointer).unwrap();
     let operand = program.get(pointer + 1).unwrap();
 
-    let operand = match operand {
-        4 => register.get(&'A').unwrap(),
-        5 => register.get(&'B').unwrap(),
-        6 => register.get(&'C').unwrap(),
-        _ => operand,
-    };
-
     let mut jumper = None;
     match opcode {
-        0 => adv(register, *operand),
+        0 => adv(register, combo(register, *operand)),
         1 => bxl(register, *operand),
-        2 => bst(register, *operand),
+        2 => bst(register, combo(register, *operand)),
         3 => jumper = jnz(register, *operand),
         4 => bxc(register),
-        5 => output.push(out(*operand)),
-        6 => bdv(register, *operand),
-        7 => cdv(register, *operand),
+        5 => output.push(out(combo(register, *operand))),
+        6 => bdv(register, combo(register, *operand)),
+        7 => cdv(register, combo(register, *operand)),
         _ => todo!(),
     }
 
@@ -90,6 +78,15 @@ fn run(
 }
 
 type Register = HashMap<char, usize>;
+
+fn combo(register: &Register, operand: usize) -> usize {
+    match operand {
+        4 => *register.get(&'A').unwrap(),
+        5 => *register.get(&'B').unwrap(),
+        6 => *register.get(&'C').unwrap(),
+        _ => operand,
+    }
+}
 
 fn adv(register: &mut Register, operand: usize) {
     let result = register.get(&'A').unwrap() / (2_usize.pow(operand as u32));
