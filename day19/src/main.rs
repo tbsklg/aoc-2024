@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -11,44 +11,26 @@ fn part1(input: &str) -> usize {
     let patterns = extract_patterns(parts[0]);
     parts[1]
         .lines()
-        .filter(|line| {
-            let mut queue = vec![line.to_string()];
-
-            while let Some(curr) = queue.pop() {
-                if curr.is_empty() {
-                    return true;
-                }
-
-                let head = curr.chars().next().unwrap_or_default();
-                let matching_patterns = match patterns.get(&head) {
-                    Some(values) => values
-                        .iter()
-                        .filter(|v| curr.starts_with(*v))
-                        .collect::<Vec<_>>(),
-                    None => vec![],
-                };
-
-                if matching_patterns.is_empty() {
-                    return false;
-                }
-
-                queue.extend(
-                    matching_patterns
-                        .iter()
-                        .map(|v| curr.strip_prefix(*v).unwrap().to_string()),
-                );
-            }
-
-            true
-        })
+        .filter(|design| is_valid(design, &patterns))
         .count()
 }
 
-fn extract_patterns(input: &str) -> HashMap<char, Vec<String>> {
-    input.split(", ").fold(HashMap::new(), |mut acc, curr| {
-        acc.entry(curr.chars().next().unwrap())
-            .and_modify(|e| e.push(curr.to_string()))
-            .or_insert(vec![curr.to_string()]);
-        acc
-    })
+fn is_valid(design: &str, patterns: &HashSet<&str>) -> bool {
+    if design.is_empty() {
+        return true;
+    }
+
+    for pattern in patterns {
+        if let Some(stripped) = design.strip_prefix(pattern) {
+            if is_valid(stripped, patterns) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn extract_patterns(input: &str) -> HashSet<&str> {
+    input.split(", ").collect()
 }
