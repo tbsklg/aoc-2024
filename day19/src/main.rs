@@ -27,20 +27,25 @@ fn part2(input: &str) -> usize {
         .sum()
 }
 
-fn number_of_ways<'a>(design: &'a str, patterns: &HashSet<&str>, memo: &mut HashMap<&'a str, usize>) -> usize {
+fn number_of_ways<'a>(
+    design: &'a str,
+    patterns: &HashSet<&str>,
+    memo: &mut HashMap<&'a str, usize>,
+) -> usize {
     if design.is_empty() {
         return 1;
     }
 
-    if  memo.contains_key(design) {
+    if memo.contains_key(design) {
         return *memo.get(&design).unwrap();
     }
-    
-    let design_count: usize = patterns.iter()
+
+    let design_count: usize = patterns
+        .iter()
         .map(|p| design.strip_prefix(p))
         .map(|d| d.map_or(0, |nd| number_of_ways(nd, patterns, memo)))
         .sum();
-    
+
     memo.insert(design, design_count);
     design_count
 }
