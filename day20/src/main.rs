@@ -1,54 +1,80 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
-    let now = std::time::Instant::now();
 
-    let cheats = part1(&input);
-    println!("Part 1: {} ({:?})", cheats, now.elapsed());
+    println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
     let grid = extract_grid(input);
     let path = path(&grid, find_start(&grid).unwrap());
 
-    cheats(&path.unwrap()).unwrap_or(0)
+    cheats_p1(&path.unwrap()).unwrap_or(0)
 }
 
-fn distances(path: &[Pos]) -> HashMap<Pos, usize> {
-    path.iter()
+fn part2(input: &str) -> usize {
+    let grid = extract_grid(input);
+    let path = path(&grid, find_start(&grid).unwrap());
+
+    cheats_p2(&path.unwrap()).unwrap_or(0)
+}
+
+fn cheats_p1(path: &[Pos]) -> Option<usize> {
+    let distances = path
+        .iter()
         .enumerate()
-        .fold(HashMap::new(), |mut acc, (i, curr)| {
-            acc.insert(*curr, path.len() - i);
-            acc
-        })
-}
-
-fn cheats(path: &[Pos]) -> Option<usize> {
-    let distances = distances(path);
+        .map(|(i, &p)| (p, i))
+        .collect::<Vec<_>>();
 
     Some(
-        path.iter()
+        distances
+            .iter()
             .enumerate()
-            .map(|(i, curr)| {
-                path.iter()
-                    .skip(i + 1)
-                    .filter(|next| dist(curr, next) <= 20)
-                    .filter(|pos| {
-                        (distances
-                            .get(&pos)
-                            .unwrap()
-                            .abs_diff(*distances.get(curr).unwrap()))
-                        >= 103
-                    })
-                    .count()
+            .map(|(i, (p1, d1))| {
+                distances.iter().skip(i + 1).fold(0, |mut acc, (p2, d2)| {
+                    let distance = dist(*p1, *p2);
+                    let path_gap = *d2 - d1 - distance;
+
+                    if distance == 2 && path_gap >= 100 {
+                        acc += 1;
+                    }
+                    acc
+                })
             })
             .sum(),
     )
 }
 
-fn dist((a, b): &(i32, i32), (c, d): &(i32, i32)) -> usize {
-    ((a - c).abs() + (b - d).abs()).abs() as usize
+fn cheats_p2(path: &[Pos]) -> Option<usize> {
+    let distances = path
+        .iter()
+        .enumerate()
+        .map(|(i, &p)| (p, i))
+        .collect::<Vec<_>>();
+
+    Some(
+        distances
+            .iter()
+            .enumerate()
+            .map(|(i, (p1, d1))| {
+                distances.iter().skip(i + 1).fold(0, |mut acc, (p2, d2)| {
+                    let distance = dist(*p1, *p2);
+                    let path_gap = *d2 - d1 - distance;
+
+                    if distance <= 20 && path_gap >= 100 {
+                        acc += 1;
+                    }
+                    acc
+                })
+            })
+            .sum(),
+    )
+}
+
+fn dist((a, b): (i32, i32), (c, d): (i32, i32)) -> usize {
+    ((a - c).abs() + (b - d).abs()).abs().unsigned_abs() as usize
 }
 
 fn extract_grid(input: &str) -> Vec<Vec<char>> {
