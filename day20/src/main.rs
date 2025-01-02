@@ -10,8 +10,7 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let grid = extract_grid(input);
-    let start = find_start(&grid).unwrap();
-    let path = path(&extract_grid(input), start);
+    let path = path(&grid, find_start(&grid).unwrap());
 
     cheats(&path.unwrap()).unwrap_or(0)
 }
@@ -33,14 +32,14 @@ fn cheats(path: &[Pos]) -> Option<usize> {
             .enumerate()
             .map(|(i, curr)| {
                 path.iter()
-                    .skip(i)
+                    .skip(i + 1)
                     .filter(|next| dist(curr, next) <= 20)
                     .filter(|pos| {
                         (distances
                             .get(&pos)
                             .unwrap()
                             .abs_diff(*distances.get(curr).unwrap()))
-                            > 100
+                        >= 103
                     })
                     .count()
             })
