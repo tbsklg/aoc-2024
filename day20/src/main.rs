@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
+    let now = std::time::Instant::now();
 
-    println!("Part 1: {}", part1(&input));
+    let cheats = part1(&input);
+    println!("Part 1: {} ({:?})", cheats, now.elapsed());
 }
 
 fn part1(input: &str) -> usize {
@@ -11,74 +13,43 @@ fn part1(input: &str) -> usize {
     let start = find_start(&grid).unwrap();
     let path = path(&extract_grid(input), start);
 
-    cheats(&grid, &path.unwrap()).unwrap_or(0)
+    cheats(&path.unwrap()).unwrap_or(0)
 }
 
-fn positions(path: &[Pos]) -> HashMap<Pos, usize> {
+fn distances(path: &[Pos]) -> HashMap<Pos, usize> {
     path.iter()
         .enumerate()
         .fold(HashMap::new(), |mut acc, (i, curr)| {
-            acc.insert(*curr, i);
+            acc.insert(*curr, path.len() - i);
             acc
         })
 }
 
-fn cheats(map: &[Vec<char>], path: &[Pos]) -> Option<usize> {
-    let positions = positions(path);
-
-    let mut i = 0;
-    let mut cheats = HashMap::new();
-
-    while let Some(curr) = path.get(i) {
-        match path.get(i + 1..) {
-            Some(tail) => {
-                let cheat_positions = DIRS
-                    .iter()
-                    .map(|(dx, dy)| (dx + curr.0, dy + curr.1))
-                    .filter(|pos| get(pos, map) == Some('#'))
-                    .flat_map(|pos| {
-                        DIRS.iter()
-                            .map(|(dx, dy)| (dx + pos.0, dy + pos.1))
-                            .filter(|pos| get(pos, map) == Some('.') || get(pos, map) == Some('E'))
-                            .filter(|pos| dist(pos, curr) == Some(2))
-                            .filter(|pos| tail.contains(pos))
-                            .collect::<Vec<_>>()
-                    })
-                    .map(|pos| positions.get(&pos).unwrap() - positions.get(curr).unwrap() - 2)
-                    .collect::<Vec<_>>();
-
-                for cheat_position in cheat_positions {
-                    cheats
-                        .entry(cheat_position)
-                        .and_modify(|r| *r += 1)
-                        .or_insert(1);
-                }
-
-                i += 1;
-            }
-            None => todo!(),
-        }
-    }
+fn cheats(path: &[Pos]) -> Option<usize> {
+    let distances = distances(path);
 
     Some(
-        cheats
-            .iter()
-            .filter(|(k, _)| k >= &&100)
-            .map(|(_, v)| v)
+        path.iter()
+            .enumerate()
+            .map(|(i, curr)| {
+                path.iter()
+                    .skip(i)
+                    .filter(|next| dist(curr, next) <= 20)
+                    .filter(|pos| {
+                        (distances
+                            .get(&pos)
+                            .unwrap()
+                            .abs_diff(*distances.get(curr).unwrap()))
+                            > 100
+                    })
+                    .count()
+            })
             .sum(),
     )
 }
 
-fn dist((a, b): &(i32, i32), (c, d): &(i32, i32)) -> Option<i32> {
-    if a == c {
-        return Some((b - d).abs());
-    }
-
-    if b == d {
-        return Some((a - c).abs());
-    }
-
-    None
+fn dist((a, b): &(i32, i32), (c, d): &(i32, i32)) -> usize {
+    ((a - c).abs() + (b - d).abs()).abs() as usize
 }
 
 fn extract_grid(input: &str) -> Vec<Vec<char>> {
