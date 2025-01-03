@@ -26,7 +26,7 @@ fn part1(input: &str) -> usize {
     ];
     let dir_pad: DirPad = [['\0', '^', 'A'], ['<', 'v', '>']];
 
-    let paths = shortest_path(&num_pad, (2, 3), '2');
+    let paths = shortest_path(&num_pad, (2, 3), '9');
 
     println!("{:?}", paths);
     0
@@ -46,9 +46,9 @@ fn shortest_paths(num_pad: &[[char; 3]; 4], start: Pos, code: &str) -> Vec<Vec<(
     paths
 }
 
-fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos, Vec<Vec<Dir>>> {
+fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos, Vec<Vec<char>>> {
     let mut queue: VecDeque<(Pos, Vec<(Pos, Dir)>)> = VecDeque::from([(start, vec![])]);
-    let mut paths: HashMap<Pos, Vec<Vec<Dir>>> = HashMap::new();
+    let mut paths: HashMap<Pos, Vec<Vec<char>>> = HashMap::new();
     let mut min_path = usize::MAX;
 
     while let Some((curr, path)) = queue.pop_front() {
@@ -59,7 +59,7 @@ fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos
 
             min_path = path.len();
 
-            let dirs = path.iter().map(|p| p.1).collect::<Vec<_>>();
+            let dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
             paths
                 .entry(curr)
                 .and_modify(|p| p.push(dirs.clone()))
@@ -89,6 +89,16 @@ fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos
     }
     
     paths
+}
+
+fn print_dir(dir: Dir) -> char {
+    match dir {
+        (-1, 0) => '<',
+        (1, 0) => '>',
+        (0, -1) => '^',
+        (0, 1) => 'v',
+        _ => unreachable!(),
+    }
 }
 
 fn get(num_pad: &NumPad, pos: Pos) -> Option<char> {
