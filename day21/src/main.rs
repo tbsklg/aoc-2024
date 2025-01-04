@@ -23,7 +23,7 @@ fn part1(input: &str) -> usize {
         vec!['\0', '0', 'A'],
     ];
     let dir_pad: Pad = vec![vec!['\0', '^', 'A'], vec!['<', 'v', '>']];
-    
+
     complexity(&num_pad, &dir_pad, codes)
 }
 
@@ -44,10 +44,10 @@ fn extract_num(code: &str) -> usize {
 }
 
 fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
-    shortest_paths(&num_pad, (2, 3), code)
+    shortest_paths(num_pad, (2, 3), code)
         .iter()
-        .flat_map(|p| shortest_paths(&dir_pad, (2, 0), &p.into_iter().collect::<String>()))
-        .flat_map(|p| shortest_paths(&dir_pad, (2, 0), &p.into_iter().collect::<String>()))
+        .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
+        .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
         .map(|p| p.len())
         .min()
         .unwrap_or(0)
@@ -56,7 +56,7 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
 fn shortest_paths(pad: &Vec<Vec<char>>, start: Pos, code: &str) -> Vec<Vec<char>> {
     code.chars()
         .fold((start, vec![vec![]]), |(start, all_paths), c| {
-            let (next_pos, paths) = shortest_path(&pad, start, c);
+            let (next_pos, paths) = shortest_path(pad, start, c);
 
             let new_paths = all_paths
                 .into_iter()
