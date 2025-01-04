@@ -1,7 +1,4 @@
-use std::{
-    collections::{BinaryHeap, HashMap, HashSet, VecDeque},
-    process::exit,
-};
+use std::collections::VecDeque;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -26,30 +23,38 @@ fn part1(input: &str) -> usize {
     ];
     let dir_pad: DirPad = [['\0', '^', 'A'], ['<', 'v', '>']];
 
-    let paths = shortest_path(&num_pad, (2, 3), '9');
+    let paths = shortest_paths(&num_pad, (2, 3), "029A");
 
     println!("{:?}", paths);
     0
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct State {
-    pos: Pos,
-    dir: Dir,
-    steps: usize,
+fn shortest_paths(num_pad: &[[char; 3]; 4], start: Pos, code: &str) -> Vec<Vec<char>> {
+    code.chars()
+        .fold((start, vec![vec![]]), |(start, all_paths), c| {
+            let (next_pos, paths) = shortest_path(num_pad, start, c);
+
+            let new_paths = all_paths
+                .into_iter()
+                .flat_map(|route| {
+                    paths.iter().map(move |p| {
+                        let mut new_route = route.clone();
+                        new_route.extend(p.clone());
+                        new_route
+                    })
+                })
+                .collect();
+
+            (next_pos, new_paths) // Return updated state: new position and routes
+        })
+        .1 // Extract
 }
 
-fn shortest_paths(num_pad: &[[char; 3]; 4], start: Pos, code: &str) -> Vec<Vec<(Pos, Dir)>> {
-    let mut paths = vec![];
-    let mut start = start;
-
-    paths
-}
-
-fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos, Vec<Vec<char>>> {
+fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> (Pos, Vec<Vec<char>>) {
     let mut queue: VecDeque<(Pos, Vec<(Pos, Dir)>)> = VecDeque::from([(start, vec![])]);
-    let mut paths: HashMap<Pos, Vec<Vec<char>>> = HashMap::new();
+    let mut paths: Vec<Vec<char>> = vec![];
     let mut min_path = usize::MAX;
+    let mut end_pos = start;
 
     while let Some((curr, path)) = queue.pop_front() {
         if get(num_pad, curr) == Some(end) {
@@ -58,12 +63,12 @@ fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos
             }
 
             min_path = path.len();
+            end_pos = curr;
 
-            let dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
-            paths
-                .entry(curr)
-                .and_modify(|p| p.push(dirs.clone()))
-                .or_insert(vec![dirs]);
+            let mut dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
+            dirs.push('A');
+            paths.push(dirs);
+
             continue;
         }
 
@@ -87,8 +92,8 @@ fn shortest_path(num_pad: &[[char; 3]; 4], start: Pos, end: char) -> HashMap<Pos
             queue.push_back(neighbor);
         }
     }
-    
-    paths
+
+    (end_pos, paths)
 }
 
 fn print_dir(dir: Dir) -> char {
