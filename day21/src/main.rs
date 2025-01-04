@@ -1,11 +1,16 @@
-use std::collections::VecDeque;
+use std::{
+    collections::{HashMap, VecDeque},
+    time::Instant,
+};
 
 use regex::Regex;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
-    println!("Part 1: {}", part1(&input));
+    let now = Instant::now();
+    let p1 = part1(&input);
+    println!("Part 1: {} ({:?})", p1, now.elapsed());
 }
 
 type Pad = Vec<Vec<char>>;
@@ -27,6 +32,16 @@ fn part1(input: &str) -> usize {
     complexity(&num_pad, &dir_pad, codes)
 }
 
+fn build_pad_map(pad: &Pad) -> HashMap<char, Pos> {
+    let mut map = HashMap::new();
+    for (row_idx, row) in pad.iter().enumerate() {
+        for (col_idx, &c) in row.iter().enumerate() {
+            map.insert(c, (col_idx as i32, row_idx as i32));
+        }
+    }
+    map
+}
+
 fn complexity(num_pad: &Pad, dir_pad: &Pad, codes: Vec<&str>) -> usize {
     codes
         .iter()
@@ -44,20 +59,30 @@ fn extract_num(code: &str) -> usize {
 }
 
 fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
-    shortest_paths(num_pad, (2, 3), code)
-        .iter()
-        .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
-        .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
+    let num_paths = shortest_paths(num_pad, (2, 3), code);
+
+    (0..2)
+        .fold(num_paths.clone(), |acc, _| {
+            let next = acc
+                .iter()
+                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
+                .collect();
+            next
+        })
+        .into_iter()
         .map(|p| p.len())
         .min()
         .unwrap_or(0)
 }
 
 fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
+    let num_map = build_pad_map(pad);
+
     code.chars()
         .fold((start, vec![vec![]]), |(start, all_paths), c| {
-            let (next_pos, paths) = shortest_path(pad, start, c);
+            let end = num_map.get(&c).unwrap();
 
+            let paths = shortest_path(pad, start, *end);
             let new_paths = all_paths
                 .into_iter()
                 .flat_map(|route| {
@@ -67,27 +92,25 @@ fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
                         new_route
                     })
                 })
-                .collect();
+                .collect::<Vec<_>>();
 
-            (next_pos, new_paths)
+            (*end, new_paths)
         })
         .1
 }
 
-fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: char) -> (Pos, Vec<Vec<char>>) {
+fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
     let mut queue: VecDeque<(Pos, Vec<(Pos, Dir)>)> = VecDeque::from([(start, vec![])]);
     let mut paths: Vec<Vec<char>> = vec![];
     let mut min_path = usize::MAX;
-    let mut end_pos = start;
 
     while let Some((curr, path)) = queue.pop_front() {
-        if get(pad, curr) == Some(end) {
+        if curr == end {
             if path.len() > min_path {
                 break;
             }
 
             min_path = path.len();
-            end_pos = curr;
 
             let mut dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
             dirs.push('A');
@@ -117,7 +140,7 @@ fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: char) -> (Pos, Vec<Vec<c
         }
     }
 
-    (end_pos, paths)
+    paths
 }
 
 fn print_dir(dir: Dir) -> char {
