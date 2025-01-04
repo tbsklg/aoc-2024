@@ -35,12 +35,12 @@ fn complexity(num_pad: &Pad, dir_pad: &Pad, codes: Vec<&str>) -> usize {
 }
 
 fn extract_num(code: &str) -> usize {
-    let re = Regex::new(r"\d+").unwrap(); // Regular expression to match one or more digits
+    let re = Regex::new(r"\d+").unwrap();
 
     re.captures(code)
-        .and_then(|cap| cap.get(0)) // Get the first capture group
-        .and_then(|m| m.as_str().parse().ok()) // Parse it to a usize and handle any error
-        .unwrap_or(0) // Return 0 if no match is found or if parsing fails
+        .and_then(|cap| cap.get(0))
+        .and_then(|m| m.as_str().parse().ok())
+        .unwrap_or(0)
 }
 
 fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
@@ -53,7 +53,7 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .unwrap_or(0)
 }
 
-fn shortest_paths(pad: &Vec<Vec<char>>, start: Pos, code: &str) -> Vec<Vec<char>> {
+fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
     code.chars()
         .fold((start, vec![vec![]]), |(start, all_paths), c| {
             let (next_pos, paths) = shortest_path(pad, start, c);
@@ -69,9 +69,9 @@ fn shortest_paths(pad: &Vec<Vec<char>>, start: Pos, code: &str) -> Vec<Vec<char>
                 })
                 .collect();
 
-            (next_pos, new_paths) // Return updated state: new position and routes
+            (next_pos, new_paths)
         })
-        .1 // Extract
+        .1
 }
 
 fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: char) -> (Pos, Vec<Vec<char>>) {
