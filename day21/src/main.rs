@@ -61,11 +61,13 @@ fn extract_num(code: &str) -> usize {
 fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
     let num_paths = shortest_paths(num_pad, (2, 3), code);
 
-    (0..2)
+    (0..=1)
         .fold(num_paths.clone(), |acc, _| {
             let next = acc
                 .iter()
-                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
+                .flat_map(|p| {
+                    shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>())
+                })
                 .collect();
             next
         })
@@ -75,7 +77,11 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .unwrap_or(0)
 }
 
-fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
+fn shortest_paths(
+    pad: &Pad,
+    start: Pos,
+    code: &str,
+) -> Vec<Vec<char>> {
     let num_map = build_pad_map(pad);
 
     code.chars()
