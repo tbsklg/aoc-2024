@@ -59,13 +59,16 @@ fn extract_num(code: &str) -> usize {
 }
 
 fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
-    let num_paths = shortest_paths(num_pad, (2, 3), code);
+    let num_map = build_pad_map(num_pad);
+    let dir_map = build_pad_map(dir_pad);
+
+    let num_paths = shortest_paths(num_pad, (2, 3), code, &num_map);
 
     (0..=1)
         .fold(num_paths.clone(), |acc, _| {
             let next = acc
                 .iter()
-                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p))
+                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p, &dir_map))
                 .collect();
             next
         })
@@ -75,14 +78,18 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .unwrap_or(0)
 }
 
-fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<String> {
-    let num_map = build_pad_map(pad);
-
+fn shortest_paths(
+    pad: &Pad,
+    start: Pos,
+    code: &str,
+    pad_map: &HashMap<char, Pos>,
+) -> Vec<String> {
     code.chars()
         .fold((start, vec![String::new()]), |(start, all_paths), c| {
-            let end = num_map.get(&c).unwrap();
+            let end = pad_map.get(&c).unwrap();
 
             let paths = shortest_path(pad, start, *end);
+
             let new_paths = all_paths
                 .into_iter()
                 .flat_map(|path| {
@@ -100,12 +107,12 @@ fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<String> {
 }
 
 fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<String> {
-    let mut queue: VecDeque<(Pos, Vec<char>,HashSet<Pos>)> =
+    let mut queue: VecDeque<(Pos, Vec<char>, HashSet<Pos>)> =
         VecDeque::from([(start, Vec::new(), HashSet::new())]);
     let mut paths: Vec<String> = vec![];
     let mut min_path = usize::MAX;
 
-    while let Some((curr,mut path, mut visited)) = queue.pop_front() {
+    while let Some((curr, mut path, mut visited)) = queue.pop_front() {
         if curr == end {
             if path.len() > min_path {
                 break;
