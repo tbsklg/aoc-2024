@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     time::Instant,
 };
 
@@ -65,9 +65,7 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .fold(num_paths.clone(), |acc, _| {
             let next = acc
                 .iter()
-                .flat_map(|p| {
-                    shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>())
-                })
+                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
                 .collect();
             next
         })
@@ -77,11 +75,7 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .unwrap_or(0)
 }
 
-fn shortest_paths(
-    pad: &Pad,
-    start: Pos,
-    code: &str,
-) -> Vec<Vec<char>> {
+fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
     let num_map = build_pad_map(pad);
 
     code.chars()
@@ -106,11 +100,12 @@ fn shortest_paths(
 }
 
 fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
-    let mut queue: VecDeque<(Pos, Vec<(Pos, Dir)>)> = VecDeque::from([(start, vec![])]);
+    let mut queue: VecDeque<(Pos, Vec<char>,HashSet<Pos>)> =
+        VecDeque::from([(start, Vec::new(), HashSet::new())]);
     let mut paths: Vec<Vec<char>> = vec![];
     let mut min_path = usize::MAX;
 
-    while let Some((curr, path)) = queue.pop_front() {
+    while let Some((curr,mut path, mut visited)) = queue.pop_front() {
         if curr == end {
             if path.len() > min_path {
                 break;
@@ -118,23 +113,26 @@ fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
 
             min_path = path.len();
 
-            let mut dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
-            dirs.push('A');
-            paths.push(dirs);
+            path.push('A');
+            paths.push(path.clone());
 
             continue;
         }
+
+        if visited.contains(&curr) {
+            continue;
+        }
+        visited.insert(curr);
 
         let neighbors = DIRS
             .iter()
             .filter_map(|dir| {
                 let next = (curr.0 + dir.0, curr.1 + dir.1);
-                let visited = path.iter().map(|p| p.0).collect::<Vec<_>>();
 
                 if !visited.contains(&next) && get(pad, next).is_some_and(|c| c != '\0') {
                     let mut next_path = path.clone();
-                    next_path.push((next, *dir));
-                    Some((next, next_path))
+                    next_path.push(print_dir(*dir));
+                    Some((next, next_path, visited.clone()))
                 } else {
                     None
                 }
