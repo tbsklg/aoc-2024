@@ -65,7 +65,7 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .fold(num_paths.clone(), |acc, _| {
             let next = acc
                 .iter()
-                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>()))
+                .flat_map(|p| shortest_paths(dir_pad, (2, 0), &p))
                 .collect();
             next
         })
@@ -75,34 +75,34 @@ fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
         .unwrap_or(0)
 }
 
-fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<Vec<char>> {
+fn shortest_paths(pad: &Pad, start: Pos, code: &str) -> Vec<String> {
     let num_map = build_pad_map(pad);
 
     code.chars()
-        .fold((start, vec![vec![]]), |(start, all_paths), c| {
+        .fold((start, vec![String::new()]), |(start, all_paths), c| {
             let end = num_map.get(&c).unwrap();
 
             let paths = shortest_path(pad, start, *end);
             let new_paths = all_paths
                 .into_iter()
-                .flat_map(|route| {
+                .flat_map(|path| {
                     paths.iter().map(move |p| {
-                        let mut new_route = route.clone();
-                        new_route.extend(p.clone());
-                        new_route
+                        let mut new_path = path.clone();
+                        new_path.push_str(p);
+                        new_path
                     })
                 })
-                .collect::<Vec<_>>();
+                .collect::<Vec<String>>();
 
             (*end, new_paths)
         })
         .1
 }
 
-fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
+fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<String> {
     let mut queue: VecDeque<(Pos, Vec<char>,HashSet<Pos>)> =
         VecDeque::from([(start, Vec::new(), HashSet::new())]);
-    let mut paths: Vec<Vec<char>> = vec![];
+    let mut paths: Vec<String> = vec![];
     let mut min_path = usize::MAX;
 
     while let Some((curr,mut path, mut visited)) = queue.pop_front() {
@@ -114,7 +114,7 @@ fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
             min_path = path.len();
 
             path.push('A');
-            paths.push(path.clone());
+            paths.push(path.iter().collect::<String>());
 
             continue;
         }
