@@ -1,4 +1,4 @@
-use std::iter::{once, repeat_with};
+use std::{collections::{HashMap, HashSet}, iter::{once, repeat_with}};
 
 use itertools::Itertools;
 
@@ -16,12 +16,49 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let x = extract_numbers(input)
-        .map(|sn| price_changes(sn).nth(1).unwrap())
-        .collect::<Vec<_>>();
+    find_best_sequence_for_bananas(input)
+}
 
-    println!("{:?}", x);
-    0
+fn find_best_sequence_for_bananas(input: &str) -> usize {
+    let mut sequences = HashMap::new();  // To store sequences and their occurrences
+
+    // Iterate over all secret numbers in the input and process each one
+    extract_numbers(input).for_each(|sn| {
+        let changes_iter = price_changes(sn);
+        let mut window = Vec::new();
+        let mut seen_changes = HashSet::new(); // To detect cycles
+
+        // Iterate over the price changes and detect cycles
+        for (i, change) in changes_iter.enumerate() {
+            window.push(change);
+
+            // Check for repeating sequences
+            let sequence: String = window.iter().map(ToString::to_string).join(",");
+            if seen_changes.contains(&sequence) {
+                break; // Stop if we detect a cycle (sequence repeat)
+            }
+
+            // Store the sequence
+            seen_changes.insert(sequence);
+
+            // Store sequences of varying lengths
+            for length in 1..=window.len() {
+                let sequence: String = window.iter().take(length).map(ToString::to_string).join(",");
+                sequences
+                    .entry(sequence)
+                    .or_insert_with(Vec::new)
+                    .push(i + 1); // Store whatever value is needed (price or index)
+            }
+        }
+    });
+
+    // Example: Find the highest index or a value based on the sequences found
+    sequences
+        .iter()
+        .filter_map(|(_, indices)| indices.iter().max())
+        .max()
+        .copied()
+        .unwrap_or(0)
 }
 
 fn extract_numbers(input: &str) -> impl Iterator<Item = usize> + '_ {
@@ -58,6 +95,7 @@ fn price_changes(x: usize) -> impl Iterator<Item = i32> {
         current as i32 - previous as i32
     })
 }
+
 
 #[cfg(test)]
 mod tests {
