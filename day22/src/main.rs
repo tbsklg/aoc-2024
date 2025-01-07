@@ -62,7 +62,7 @@ fn price_changes(x: usize) -> impl Iterator<Item = i32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{mix, next_secret_numbers, prune, to_next_secret_number};
+    use crate::{mix, next_secret_numbers, price_changes, prune, to_next_secret_number};
 
     #[test]
     fn should_mix() {
@@ -81,11 +81,17 @@ mod tests {
 
     #[test]
     fn should_calc_next_secrets() {
-        assert_eq!(15887950, next_secret_numbers(123).next().unwrap())
+        assert_eq!(123, next_secret_numbers(123).next().unwrap())
     }
 
     #[test]
     fn should_calc_2000_next_secrets() {
-        assert_eq!(5908254, next_secret_numbers(123).nth(9).unwrap())
+        assert_eq!(5908254, next_secret_numbers(123).nth(10).unwrap())
+    }
+
+    #[test]
+    fn should_calc_price_changes() {
+        let changes = price_changes(123).take(10).collect::<Vec<i32>>();
+        assert_eq!(vec![-3, 6, -1, -1, 0, 2, -2, 0, -2, 2], changes)
     }
 }
