@@ -1,4 +1,7 @@
-use std::{collections::{HashMap, HashSet}, iter::{once, repeat_with}};
+use std::{
+    collections::HashMap,
+    iter::{once, repeat_with},
+};
 
 use itertools::Itertools;
 
@@ -16,12 +19,33 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    find_best_sequence_for_bananas(input)
+    extract_numbers(input)
+        .flat_map(sequences)
+        .fold(HashMap::new(), |mut acc, (k, v)| {
+            *acc.entry(k).or_insert(0) += v;
+            acc
+        })
+        .values()
+        .max()
+        .copied()
+        .unwrap_or(0) // Default to
 }
 
-fn find_best_sequence_for_bananas(input: &str) -> usize {
-    todo!()
-    
+fn sequences(n: usize) -> HashMap<Vec<isize>, usize> {
+    let prices = price(n).take(2001).collect::<Vec<_>>();
+
+    prices
+        .iter()
+        .tuple_windows()
+        .map(|(previous, current)| *current as isize - *previous as isize)
+        .collect::<Vec<_>>()
+        .windows(4)
+        .enumerate()
+        .fold(HashMap::new(), |mut sequences, (i, w)| {
+            let key = w.to_vec();
+            sequences.entry(key).or_insert(prices[i + 4]);
+            sequences
+        })
 }
 
 fn extract_numbers(input: &str) -> impl Iterator<Item = usize> + '_ {
@@ -53,16 +77,9 @@ fn price(x: usize) -> impl Iterator<Item = usize> {
     next_secret_numbers(x).map(|x| x % 10)
 }
 
-fn price_changes(x: usize) -> impl Iterator<Item = i32> {
-    price(x).tuple_windows().map(|(previous, current)| {
-        current as i32 - previous as i32
-    })
-}
-
-
 #[cfg(test)]
 mod tests {
-    use crate::{mix, next_secret_numbers, price_changes, prune, to_next_secret_number};
+    use crate::{mix, next_secret_numbers, prune, sequences, to_next_secret_number};
 
     #[test]
     fn should_mix() {
@@ -90,8 +107,16 @@ mod tests {
     }
 
     #[test]
-    fn should_calc_price_changes() {
-        let changes = price_changes(123).take(10).collect::<Vec<i32>>();
-        assert_eq!(vec![-3, 6, -1, -1, 0, 2, -2, 0, -2, 2], changes)
+    fn should_calc_sequences() {
+        let s = sequences(123);
+
+        assert_eq!(&6, s.get(&[-1, -1, 0, 2].to_vec()).unwrap());
+    }
+
+    #[test]
+    fn should_calc_another_sequences() {
+        let s = sequences(1);
+
+        assert_eq!(&7, s.get(&[-2, 1, -1, 3].to_vec()).unwrap());
     }
 }
