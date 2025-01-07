@@ -1,6 +1,6 @@
 use itertools::Itertools as _;
 use std::collections::{HashMap, HashSet};
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -18,13 +18,10 @@ fn part1(input: &str) -> usize {
             acc
         });
 
-    let x = find_triangles(&graph);
-        
-    println!("{:?}", x.len());
-    x.iter().filter(|c| c.starts_with_t()).count()
+    find_triangles(&graph).iter().filter(|c| c.starts_with_t()).count()
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Hash)]
 struct Clique {
     a: String,
     b: String,
@@ -33,10 +30,12 @@ struct Clique {
 
 impl From<(&str, &str, &str)> for Clique {
     fn from((a, b, c): (&str, &str, &str)) -> Self {
+        let mut nodes = vec![a.to_string(), b.to_string(), c.to_string()];
+        nodes.sort();
         Self {
-            a: a.to_string(),
-            b: b.to_string(),
-            c: c.to_string(),
+            a: nodes[0].clone(),
+            b: nodes[1].clone(),
+            c: nodes[2].clone(),
         }
     }
 }
@@ -47,43 +46,25 @@ impl Clique {
     }
 }
 
-impl Hash for Clique {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut fields = vec![&self.a, &self.b, &self.c];
-        fields.sort();
-        for field in fields {
-            field.hash(state);
-        }
-    }
-}
-
 impl PartialEq for Clique {
     fn eq(&self, other: &Self) -> bool {
-        let mut self_fields = vec![&self.a, &self.b, &self.c];
-        let mut other_fields = vec![&other.a, &other.b, &other.c];
-        self_fields.sort();
-        other_fields.sort();
-        self_fields == other_fields
+        self.a == other.a && self.b == other.b && self.c == other.c
     }
 }
 
 fn find_triangles(graph: &HashMap<&str, Vec<&str>>) -> HashSet<Clique> {
     graph
-        .into_iter()
-        .flat_map(|(k, v)| {
-            v.iter().tuple_windows().filter_map(move |(a, b)| {
-                if let (Some(v1), Some(v2)) = (graph.get(a), graph.get(b)) {
-                    if v1.contains(b) && v2.contains(a) {
-                        Some(Clique::from((*k, *a, *b)))
-                    } else {
-                        None
-                    }
+        .iter()
+        .flat_map(|(k, neighbors)| {
+            neighbors.iter().tuple_combinations().filter_map(move |(&a, &b)| {
+                if graph.get(a).unwrap_or(&Vec::new()).contains(&b) {
+                    Some(Clique::from((*k, a, b)))
                 } else {
                     None
                 }
             })
         })
-        .collect::<HashSet<Clique>>()
+        .collect()
 }
 
 fn extract_connections(input: &str) -> Vec<(&str, &str)> {
@@ -96,5 +77,5 @@ fn extract_connections(input: &str) -> Vec<(&str, &str)> {
                 split_by_minus.next().unwrap(),
             )
         })
-        .collect::<Vec<_>>()
+        .collect()
 }
