@@ -8,11 +8,51 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let mut sections = input.split("\n\n");
-    let wires = extract_wires(sections.next().unwrap());
-    let connections = extract_connections(sections.next().unwrap());
-
-    println!("{:?}", connections);
+    let wires = extract_wires(sections.next().unwrap()).unwrap();
+    let connections = &mut extract_connections(sections.next().unwrap()).unwrap();
+    
+    let x = process(wires, connections);
+    println!("{:?}", x);
     0
+}
+
+fn process<'a>(
+    mut wires: HashMap<&'a str, bool>,
+    connections: &mut Vec<Connection<'a>>,
+) -> HashMap<&'a str, bool> {
+    while let Some(connection) = connections.pop() {
+        let result = match connection {
+            Connection::AND(a, b, r) => {
+                if let (Some(&v1), Some(&v2)) = (wires.get(a), wires.get(b)) {
+                    wires.insert(r, Gates::AND(v1, v2).exec());
+                    None
+                } else {
+                    Some(connection)
+                }
+            }
+            Connection::OR(a, b, r) => {
+                if let (Some(&v1), Some(&v2)) = (wires.get(a), wires.get(b)) {
+                    wires.insert(r, Gates::OR(v1, v2).exec());
+                    None
+                } else {
+                    Some(connection)
+                }
+            }
+            Connection::XOR(a, b, r) => {
+                if let (Some(&v1), Some(&v2)) = (wires.get(a), wires.get(b)) {
+                    wires.insert(r, Gates::XOR(v1, v2).exec());
+                    None
+                } else {
+                    Some(connection)
+                }
+            }
+        };
+
+        if let Some(conn) = result {
+            connections.push(conn);
+        }
+    }
+    wires
 }
 
 fn extract_wires(input: &str) -> Result<HashMap<&str, bool>, &'static str> {
