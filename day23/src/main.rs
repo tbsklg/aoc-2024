@@ -1,11 +1,12 @@
 use itertools::Itertools as _;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
 
 fn part1(input: &str) -> usize {
@@ -18,7 +19,26 @@ fn part1(input: &str) -> usize {
             acc
         });
 
-    find_triangles(&graph).iter().filter(|c| c.starts_with_t()).count()
+    find_triangles(&graph)
+        .iter()
+        .filter(|c| c.starts_with_t())
+        .count()
+}
+
+fn part2(input: &str) -> String {
+    let connections = extract_connections(input);
+
+    let graph: HashMap<&str, Vec<&str>> =
+        connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
+            acc.entry(a).or_insert_with(Vec::new).push(b);
+            acc.entry(b).or_insert_with(Vec::new).push(a);
+            acc
+        });
+
+    let mut network = find_largest_clique(&graph).into_iter().collect::<Vec<_>>();
+    network.sort();
+    
+    network.iter().join(",")
 }
 
 #[derive(Debug, Eq, Hash)]
@@ -52,17 +72,64 @@ impl PartialEq for Clique {
     }
 }
 
+fn find_largest_clique<'a>(graph: &'a HashMap<&'a str, Vec<&'a str>>) -> HashSet<&'a str> {
+    fn bron_kerbosch<'a>(
+        graph: &HashMap<&'a str, Vec<&'a str>>,
+        r: HashSet<&'a str>,
+        mut p: HashSet<&'a str>,
+        mut x: HashSet<&'a str>,
+    ) -> Vec<HashSet<&'a str>> {
+        if p.is_empty() && x.is_empty() {
+            return vec![r];
+        }
+
+        let mut cliques = Vec::new();
+
+        for node in p.clone() {
+            let neighbors: HashSet<&'a str> = graph
+                .get(&node)
+                .unwrap_or(&Vec::new())
+                .iter()
+                .cloned()
+                .collect();
+
+            let mut new_r = r.clone();
+            new_r.insert(&node);
+
+            let new_p = p.intersection(&neighbors).cloned().collect();
+            let new_x = x.intersection(&neighbors).cloned().collect();
+
+            cliques.extend(bron_kerbosch(graph, new_r, new_p, new_x));
+
+            p.remove(&node);
+            x.insert(&node);
+        }
+
+        cliques
+    }
+
+    let p: HashSet<&str> = graph.keys().cloned().collect();
+    let cliques = bron_kerbosch(graph, HashSet::new(), p, HashSet::new());
+
+    cliques
+        .into_iter()
+        .max_by_key(|clique| clique.len())
+        .unwrap_or_else(HashSet::new)
+}
 fn find_triangles(graph: &HashMap<&str, Vec<&str>>) -> HashSet<Clique> {
     graph
         .iter()
         .flat_map(|(k, neighbors)| {
-            neighbors.iter().tuple_combinations().filter_map(move |(&a, &b)| {
-                if graph.get(a).unwrap_or(&Vec::new()).contains(&b) {
-                    Some(Clique::from((*k, a, b)))
-                } else {
-                    None
-                }
-            })
+            neighbors
+                .iter()
+                .tuple_combinations()
+                .filter_map(move |(&a, &b)| {
+                    if graph.get(a).unwrap_or(&Vec::new()).contains(&b) {
+                        Some(Clique::from((*k, a, b)))
+                    } else {
+                        None
+                    }
+                })
         })
         .collect()
 }
