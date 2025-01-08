@@ -1,4 +1,9 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    error::Error,
+};
+
+use itertools::Itertools as _;
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -10,14 +15,23 @@ fn part1(input: &str) -> usize {
     let mut sections = input.split("\n\n");
     let wires = &mut extract_wires(sections.next().unwrap()).unwrap();
     let connections = &mut VecDeque::from(extract_connections(sections.next().unwrap()).unwrap());
+
     process(wires, connections);
-    0
+
+    usize::from_str_radix(
+        &wires
+            .iter()
+            .filter(|(k, _)| k.starts_with("z"))
+            .sorted()
+            .map(|(_, &v)| if v { '1' } else { '0' })
+            .rev()
+            .collect::<String>(),
+        2,
+    )
+    .unwrap()
 }
 
-fn process<'a>(
-    wires: &mut HashMap<&'a str, bool>,
-    connections: &mut VecDeque<Connection<'a>>,
-) {
+fn process<'a>(wires: &mut HashMap<&'a str, bool>, connections: &mut VecDeque<Connection<'a>>) {
     while let Some(connection) = connections.pop_front() {
         let result = match connection {
             Connection::AND(a, b, r) => {
