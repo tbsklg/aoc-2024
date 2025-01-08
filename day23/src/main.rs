@@ -1,5 +1,5 @@
 use itertools::Itertools as _;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 fn main() {
@@ -14,8 +14,8 @@ fn part1(input: &str) -> usize {
 
     let graph: HashMap<&str, Vec<&str>> =
         connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
-            acc.entry(a).or_insert_with(Vec::new).push(b);
-            acc.entry(b).or_insert_with(Vec::new).push(a);
+            acc.entry(a).or_default().push(b);
+            acc.entry(b).or_default().push(a);
             acc
         });
 
@@ -30,18 +30,18 @@ fn part2(input: &str) -> String {
 
     let graph: HashMap<&str, Vec<&str>> =
         connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
-            acc.entry(a).or_insert_with(Vec::new).push(b);
-            acc.entry(b).or_insert_with(Vec::new).push(a);
+            acc.entry(a).or_default().push(b);
+            acc.entry(b).or_default().push(a);
             acc
         });
 
     let mut network = find_largest_clique(&graph).into_iter().collect::<Vec<_>>();
     network.sort();
-    
+
     network.iter().join(",")
 }
 
-#[derive(Debug, Eq, Hash)]
+#[derive(Debug, Hash, Eq)]
 struct Clique {
     a: String,
     b: String,
@@ -50,7 +50,7 @@ struct Clique {
 
 impl From<(&str, &str, &str)> for Clique {
     fn from((a, b, c): (&str, &str, &str)) -> Self {
-        let mut nodes = vec![a.to_string(), b.to_string(), c.to_string()];
+        let mut nodes = [a.to_string(), b.to_string(), c.to_string()];
         nodes.sort();
         Self {
             a: nodes[0].clone(),
@@ -94,7 +94,7 @@ fn find_largest_clique<'a>(graph: &'a HashMap<&'a str, Vec<&'a str>>) -> HashSet
                 .collect();
 
             let mut new_r = r.clone();
-            new_r.insert(&node);
+            new_r.insert(node);
 
             let new_p = p.intersection(&neighbors).cloned().collect();
             let new_x = x.intersection(&neighbors).cloned().collect();
@@ -102,7 +102,7 @@ fn find_largest_clique<'a>(graph: &'a HashMap<&'a str, Vec<&'a str>>) -> HashSet
             cliques.extend(bron_kerbosch(graph, new_r, new_p, new_x));
 
             p.remove(&node);
-            x.insert(&node);
+            x.insert(node);
         }
 
         cliques
