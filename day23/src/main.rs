@@ -11,13 +11,7 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let connections = extract_connections(input);
-
-    let graph: HashMap<&str, Vec<&str>> =
-        connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
-            acc.entry(a).or_default().push(b);
-            acc.entry(b).or_default().push(a);
-            acc
-        });
+    let graph = create_graph(connections);
 
     find_triangles(&graph)
         .iter()
@@ -27,18 +21,20 @@ fn part1(input: &str) -> usize {
 
 fn part2(input: &str) -> String {
     let connections = extract_connections(input);
-
-    let graph: HashMap<&str, Vec<&str>> =
-        connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
-            acc.entry(a).or_default().push(b);
-            acc.entry(b).or_default().push(a);
-            acc
-        });
+    let graph = create_graph(connections);
 
     let mut network = find_largest_clique(&graph).into_iter().collect::<Vec<_>>();
     network.sort();
 
     network.iter().join(",")
+}
+
+fn create_graph<'a>(connections: Vec<(&'a str, &'a str)>) -> HashMap<&'a str, Vec<&'a str>> {
+    connections.iter().fold(HashMap::new(), |mut acc, &(a, b)| {
+        acc.entry(a).or_default().push(b);
+        acc.entry(b).or_default().push(a);
+        acc
+    })
 }
 
 #[derive(Debug, Hash, Eq)]
@@ -116,6 +112,7 @@ fn find_largest_clique<'a>(graph: &'a HashMap<&'a str, Vec<&'a str>>) -> HashSet
         .max_by_key(|clique| clique.len())
         .unwrap_or_else(HashSet::new)
 }
+
 fn find_triangles(graph: &HashMap<&str, Vec<&str>>) -> HashSet<Clique> {
     graph
         .iter()
