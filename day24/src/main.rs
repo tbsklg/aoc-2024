@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
@@ -8,19 +8,17 @@ fn main() {
 
 fn part1(input: &str) -> usize {
     let mut sections = input.split("\n\n");
-    let wires = extract_wires(sections.next().unwrap()).unwrap();
-    let connections = &mut extract_connections(sections.next().unwrap()).unwrap();
-    
-    let x = process(wires, connections);
-    println!("{:?}", x);
+    let wires = &mut extract_wires(sections.next().unwrap()).unwrap();
+    let connections = &mut VecDeque::from(extract_connections(sections.next().unwrap()).unwrap());
+    process(wires, connections);
     0
 }
 
 fn process<'a>(
-    mut wires: HashMap<&'a str, bool>,
-    connections: &mut Vec<Connection<'a>>,
-) -> HashMap<&'a str, bool> {
-    while let Some(connection) = connections.pop() {
+    wires: &mut HashMap<&'a str, bool>,
+    connections: &mut VecDeque<Connection<'a>>,
+) {
+    while let Some(connection) = connections.pop_front() {
         let result = match connection {
             Connection::AND(a, b, r) => {
                 if let (Some(&v1), Some(&v2)) = (wires.get(a), wires.get(b)) {
@@ -49,10 +47,9 @@ fn process<'a>(
         };
 
         if let Some(conn) = result {
-            connections.push(conn);
+            connections.push_back(conn);
         }
     }
-    wires
 }
 
 fn extract_wires(input: &str) -> Result<HashMap<&str, bool>, &'static str> {
