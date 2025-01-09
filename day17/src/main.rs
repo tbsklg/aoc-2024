@@ -38,7 +38,7 @@ fn part2(input: &str) -> usize {
             b ^= 5;
             b ^= c;
             if b % 8 == last {
-                let next_program = &program[..program.len() - 1]; // Borrow the slice excluding last element
+                let next_program = &program[..program.len() - 1];
                 if let Some(result) = find_a(next_program, a) {
                     return Some(result);
                 }
