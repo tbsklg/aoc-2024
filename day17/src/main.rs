@@ -10,9 +10,6 @@ fn main() {
 }
 
 fn part1(input: &str) -> String {
-
-    // Thanks to https://github.com/hyperneutrino for providing a solution
-    // see https://www.youtube.com/watch?v=y-UPxMAh2N8
     let register = &mut extract_register(input);
     let program = extract_program(input);
 
@@ -23,6 +20,8 @@ fn part1(input: &str) -> String {
         .join(",")
 }
 
+// Thanks to https://github.com/hyperneutrino for providing a solution
+// see https://www.youtube.com/watch?v=y-UPxMAh2N8
 fn part2(input: &str) -> usize {
     fn find_a(program: &[usize], ans: usize) -> Option<usize> {
         if program.is_empty() {
