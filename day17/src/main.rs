@@ -6,13 +6,48 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {:?}", part1(&input));
+    println!("Part 2: {:?}", part2(&input));
 }
 
-fn part1(input: &str) -> Option<String> {
+fn part1(input: &str) -> String {
     let register = &mut extract_register(input);
     let program = extract_program(input);
 
-    run(register, program, 0, &mut vec![])
+    run(register, &program, 0, &mut vec![])
+        .iter()
+        .map(|o| o.to_string())
+        .collect::<Vec<String>>()
+        .join(",")
+}
+
+fn part2(input: &str) -> usize {
+    fn find_a(program: &[usize], ans: usize) -> Option<usize> {
+        if program.is_empty() {
+            return Some(ans);
+        }
+
+        let last = *program.last().unwrap();
+
+        for i in 0..8 {
+            let a = ans << 3 | i;
+            let mut b = a % 8;
+            b ^= 1;
+            let c = a >> b;
+            b ^= 5;
+            b ^= c;
+            if b % 8 == last {
+                let next_program = &program[..program.len() - 1]; // Borrow the slice excluding last element
+                if let Some(result) = find_a(next_program, a) {
+                    return Some(result);
+                }
+            }
+        }
+
+        None
+    }
+
+    let program = extract_program(input);
+    find_a(&program, 0).unwrap()
 }
 
 fn extract_register(input: &str) -> Register {
@@ -42,10 +77,10 @@ fn extract_program(input: &str) -> Vec<usize> {
 
 fn run(
     register: &mut Register,
-    program: Vec<usize>,
+    program: &Vec<usize>,
     pointer: usize,
     output: &mut Vec<usize>,
-) -> Option<String> {
+) -> Vec<usize> {
     let opcode = program.get(pointer).unwrap();
     let operand = program.get(pointer + 1).unwrap();
 
@@ -67,13 +102,7 @@ fn run(
     if next_pointer < program.len() {
         run(register, program, next_pointer, output)
     } else {
-        Some(
-            output
-                .iter()
-                .map(|o| o.to_string())
-                .collect::<Vec<String>>()
-                .join(","),
-        )
+        output.to_vec()
     }
 }
 
