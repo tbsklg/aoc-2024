@@ -1,3 +1,5 @@
+use itertools::Itertools as _;
+
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
@@ -7,8 +9,23 @@ fn main() {
 fn part1(input: &str) -> usize {
     let schematics = input.split("\n\n").map(Schematic::from).collect::<Vec<_>>();
 
-    println!("{:?}", schematics);
-    0
+    let keys = schematics.iter().filter_map(|s| match s {
+        Schematic::Key(v) => Some(v),
+        Schematic::Lock(_) => None,
+    }).collect::<Vec<_>>();
+
+    let locks = schematics.iter().filter_map(|s| match s {
+        Schematic::Key(_) => None,
+        Schematic::Lock(v) => Some(v),
+    }).collect::<Vec<_>>();
+
+    locks.iter().cartesian_product(keys.iter())
+        .filter(|(lock, key)| fits(*lock, *key))
+        .count()
+}
+
+fn fits(lock: &[u8;5], key: &[u8;5]) -> bool {
+    key.iter().zip(lock.iter()).all(|(&k, l)| k < 6 - l)
 }
 
 #[derive(Debug)]
