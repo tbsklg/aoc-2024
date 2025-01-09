@@ -20,7 +20,7 @@ fn part1(input: &str) -> usize {
     }).collect::<Vec<_>>();
 
     locks.iter().cartesian_product(keys.iter())
-        .filter(|(lock, key)| fits(*lock, *key))
+        .filter(|(lock, key)| fits(lock, key))
         .count()
 }
 
