@@ -1,171 +1,153 @@
 use std::{
-    collections::{HashMap, VecDeque},
-    time::Instant,
+    collections::{HashMap, HashSet, VecDeque},
+    sync::OnceLock,
 };
 
-use regex::Regex;
+use cached::proc_macro::cached;
+use itertools::Itertools;
+
+#[derive(Clone, Eq, Hash, PartialEq)]
+enum PathType {
+    Numeric,
+    Directional,
+}
 
 fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
-    let now = Instant::now();
-    let p1 = part1(&input);
-    println!("Part 1: {} ({:?})", p1, now.elapsed());
+    println!("Part 1: {}", part1(&input));
+    println!("Part 2: {}", part2(&input));
 }
-
-type Pad = Vec<Vec<char>>;
-type Pos = (i32, i32);
-type Dir = (i32, i32);
-
-const DIRS: [Dir; 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
 fn part1(input: &str) -> usize {
-    let codes = extract_codes(input);
-    let num_pad: Pad = vec![
-        vec!['7', '8', '9'],
-        vec!['4', '5', '6'],
-        vec!['1', '2', '3'],
-        vec!['\0', '0', 'A'],
-    ];
-    let dir_pad: Pad = vec![vec!['\0', '^', 'A'], vec!['<', 'v', '>']];
-
-    complexity(&num_pad, &dir_pad, codes)
-}
-
-fn build_pad_map(pad: &Pad) -> HashMap<char, Pos> {
-    let mut map = HashMap::new();
-    for (row_idx, row) in pad.iter().enumerate() {
-        for (col_idx, &c) in row.iter().enumerate() {
-            map.insert(c, (col_idx as i32, row_idx as i32));
-        }
-    }
-    map
-}
-
-fn complexity(num_pad: &Pad, dir_pad: &Pad, codes: Vec<&str>) -> usize {
-    codes
-        .iter()
-        .map(|code| extract_num(code) * translate_code(num_pad, dir_pad, code))
-        .sum()
-}
-
-fn extract_num(code: &str) -> usize {
-    let re = Regex::new(r"\d+").unwrap();
-
-    re.captures(code)
-        .and_then(|cap| cap.get(0))
-        .and_then(|m| m.as_str().parse().ok())
-        .unwrap_or(0)
-}
-
-fn translate_code(num_pad: &Pad, dir_pad: &Pad, code: &str) -> usize {
-    let num_paths = shortest_paths(num_pad, (2, 3), code);
-
-    (0..=1)
-        .fold(num_paths.clone(), |acc, _| {
-            let next = acc
-                .iter()
-                .flat_map(|p| {
-                    shortest_paths(dir_pad, (2, 0), &p.iter().collect::<String>())
-                })
-                .collect();
-            next
+    input
+        .lines()
+        .map(|line| {
+            find_shortest_sequence(line.to_string(), 2, PathType::Numeric)
+                * line.trim_end_matches('A').parse::<usize>().unwrap()
         })
+        .sum::<usize>()
+}
+
+// Solved with the help of  @icub3d
+fn part2(input: &str) -> usize {
+    input
+        .lines()
+        .map(|line| {
+            find_shortest_sequence(line.to_string(), 25, PathType::Numeric)
+                * line.trim_end_matches('A').parse::<usize>().unwrap()
+        })
+        .sum::<usize>()
+}
+
+fn numeric_paths() -> &'static HashMap<(char, char), Vec<String>> {
+    static NUMERIC_PATHS: OnceLock<HashMap<(char, char), Vec<String>>> = OnceLock::new();
+    NUMERIC_PATHS.get_or_init(|| {
+        let numeric_keypad = vec![
+            ('7', vec![('4', 'v'), ('8', '>')]),
+            ('8', vec![('5', 'v'), ('9', '>'), ('7', '<')]),
+            ('9', vec![('6', 'v'), ('8', '<')]),
+            ('4', vec![('1', 'v'), ('5', '>'), ('7', '^')]),
+            ('5', vec![('2', 'v'), ('6', '>'), ('4', '<'), ('8', '^')]),
+            ('6', vec![('3', 'v'), ('5', '<'), ('9', '^')]),
+            ('1', vec![('2', '>'), ('4', '^')]),
+            ('2', vec![('3', '>'), ('5', '^'), ('1', '<'), ('0', 'v')]),
+            ('0', vec![('2', '^'), ('A', '>')]),
+            ('3', vec![('6', '^'), ('2', '<'), ('A', 'v')]),
+            ('A', vec![('0', '<'), ('3', '^')]),
+        ]
         .into_iter()
-        .map(|p| p.len())
-        .min()
-        .unwrap_or(0)
+        .collect::<HashMap<char, Vec<(char, char)>>>();
+
+        numeric_keypad
+            .keys()
+            .cartesian_product(numeric_keypad.keys())
+            .map(|(&a, &b)| ((a, b), shortest_path(&numeric_keypad, a, b)))
+            .collect()
+    })
 }
 
-fn shortest_paths(
-    pad: &Pad,
-    start: Pos,
-    code: &str,
-) -> Vec<Vec<char>> {
-    let num_map = build_pad_map(pad);
+fn direction_paths() -> &'static HashMap<(char, char), Vec<String>> {
+    static DIRECTION_PATHS: OnceLock<HashMap<(char, char), Vec<String>>> = OnceLock::new();
+    DIRECTION_PATHS.get_or_init(|| {
+        let direction_keypad = vec![
+            ('^', vec![('A', '>'), ('v', 'v')]),
+            ('A', vec![('^', '<'), ('>', 'v')]),
+            ('>', vec![('A', '^'), ('v', '<')]),
+            ('<', vec![('v', '>')]),
+            ('v', vec![('<', '<'), ('^', '^'), ('>', '>')]),
+        ]
+        .into_iter()
+        .collect::<HashMap<char, Vec<(char, char)>>>();
 
-    code.chars()
-        .fold((start, vec![vec![]]), |(start, all_paths), c| {
-            let end = num_map.get(&c).unwrap();
-
-            let paths = shortest_path(pad, start, *end);
-            let new_paths = all_paths
-                .into_iter()
-                .flat_map(|route| {
-                    paths.iter().map(move |p| {
-                        let mut new_route = route.clone();
-                        new_route.extend(p.clone());
-                        new_route
-                    })
-                })
-                .collect::<Vec<_>>();
-
-            (*end, new_paths)
-        })
-        .1
+        direction_keypad
+            .keys()
+            .cartesian_product(direction_keypad.keys())
+            .map(|(&a, &b)| ((a, b), shortest_path(&direction_keypad, a, b)))
+            .collect()
+    })
 }
 
-fn shortest_path(pad: &Vec<Vec<char>>, start: Pos, end: Pos) -> Vec<Vec<char>> {
-    let mut queue: VecDeque<(Pos, Vec<(Pos, Dir)>)> = VecDeque::from([(start, vec![])]);
-    let mut paths: Vec<Vec<char>> = vec![];
+fn shortest_path(
+    neighbors: &HashMap<char, Vec<(char, char)>>,
+    start: char,
+    end: char,
+) -> Vec<String> {
+    let mut queue = VecDeque::new();
+    queue.push_back((start, Vec::new(), HashSet::new()));
+
+    let mut paths = Vec::new();
     let mut min_path = usize::MAX;
 
-    while let Some((curr, path)) = queue.pop_front() {
+    while let Some((curr, path, mut visited)) = queue.pop_front() {
         if curr == end {
-            if path.len() > min_path {
-                break;
+            if path.len() <= min_path {
+                min_path = path.len();
+                paths.push(path.iter().collect::<String>());
             }
-
-            min_path = path.len();
-
-            let mut dirs = path.iter().map(|p| print_dir(p.1)).collect::<Vec<_>>();
-            dirs.push('A');
-            paths.push(dirs);
-
             continue;
         }
 
-        let neighbors = DIRS
-            .iter()
-            .filter_map(|dir| {
-                let next = (curr.0 + dir.0, curr.1 + dir.1);
-                let visited = path.iter().map(|p| p.0).collect::<Vec<_>>();
+        if visited.contains(&curr) {
+            continue;
+        }
 
-                if !visited.contains(&next) && get(pad, next).is_some_and(|c| c != '\0') {
-                    let mut next_path = path.clone();
-                    next_path.push((next, *dir));
-                    Some((next, next_path))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
+        visited.insert(curr);
 
-        for neighbor in neighbors {
-            queue.push_back(neighbor);
+        for (next, dir) in neighbors.get(&curr).unwrap() {
+            let mut path = path.clone();
+            path.push(*dir);
+            queue.push_back((*next, path, visited.clone()));
         }
     }
 
     paths
 }
 
-fn print_dir(dir: Dir) -> char {
-    match dir {
-        (-1, 0) => '<',
-        (1, 0) => '>',
-        (0, -1) => '^',
-        (0, 1) => 'v',
-        _ => unreachable!(),
-    }
-}
+#[cached]
+fn find_shortest_sequence(sequence: String, depth: usize, path_type: PathType) -> usize {
+    let paths = match path_type {
+        PathType::Numeric => numeric_paths(),
+        PathType::Directional => direction_paths(),
+    };
 
-fn get(num_pad: &Pad, pos: Pos) -> Option<char> {
-    num_pad
-        .get(pos.1 as usize)
-        .and_then(|l| l.get(pos.0 as usize))
-        .copied()
-}
-
-fn extract_codes(input: &str) -> Vec<&str> {
-    input.lines().collect()
+    ("A".to_string() + &sequence)
+        .chars()
+        .tuple_windows()
+        .map(|(a, b)| {
+            let shortest_paths = paths.get(&(a, b)).unwrap();
+            match depth {
+                0 => shortest_paths[0].len() + 1,
+                _ => shortest_paths
+                    .iter()
+                    .cloned()
+                    .map(|mut path| {
+                        path.push('A');
+                        find_shortest_sequence(path, depth - 1, PathType::Directional)
+                    })
+                    .min()
+                    .unwrap(),
+            }
+        })
+        .sum::<usize>()
 }
