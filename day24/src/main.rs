@@ -1,7 +1,5 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    error::Error,
-};
+use std::collections::{HashMap, VecDeque};
+use std::io::Write;
 
 use itertools::Itertools as _;
 
@@ -9,6 +7,16 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
 
     println!("Part 1: {}", part1(&input));
+
+    // I solved day 24 part 2 manually by identifying misconfigured full adders.
+    // These can be found in adder.svg at the following positions:
+    // - x06, y06: XOR wvr jgq -> fkp (should be: XOR wvr jgp -> z06)
+    // - z11, y11: XOR jpp stv -> ngr (should be: XOR jpp stv -> z11)
+    // - x31, y32: XOR tpf mgq -> mfm (should be: XOR tpf mgq -> z31)
+    // - x38, y38: XOR y38 x38 -> krj (should be: XOR y38 x38 -> bpt)
+
+    let _ = part2(&input);
+    println!("Part 2: {}", "bpt,fkp,krj,mfm,ngr,z06,z11,z31");
 }
 
 fn part1(input: &str) -> usize {
@@ -29,6 +37,33 @@ fn part1(input: &str) -> usize {
         2,
     )
     .unwrap()
+}
+
+fn part2(input: &str) -> std::io::Result<()> {
+    let mut sections = input.split("\n\n");
+    let connections = extract_connections(sections.nth(1).unwrap()).unwrap();
+    dot(connections, "adder.dot")
+}
+
+fn dot(connections: Vec<Connection>, filename: &str) -> std::io::Result<()> {
+    let mut file = std::fs::File::create(filename)?;
+
+    writeln!(file, "stateDiagram-v2")?;
+
+    for (i, connection) in connections.iter().enumerate() {
+        let (gate, a, b, out) = match connection {
+            Connection::AND(a, b, out) => ("AND", a, b, out),
+            Connection::OR(a, b, out) => ("OR", a, b, out),
+            Connection::XOR(a, b, out) => ("XOR", a, b, out),
+        };
+
+        let gate = format!("{}_{}", gate, i);
+
+        writeln!(file, "{} -> {}", a, gate)?;
+        writeln!(file, "{} -> {}", b, gate)?;
+        writeln!(file, "{} -> {}", gate, out)?;
+    }
+    Ok(())
 }
 
 fn process<'a>(wires: &mut HashMap<&'a str, bool>, connections: &mut VecDeque<Connection<'a>>) {
